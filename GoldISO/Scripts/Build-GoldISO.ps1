@@ -19,7 +19,7 @@ function Invoke-OfflineRegistryHardening {
     param($MountPath, $RegistryJson)
     if (-not (Test-Path $RegistryJson)) { return }
     Write-Log "Applying Queued Registry Tweaks..." "INFO"
-    $tweaks = Get-Content $RegistryJson | ConvertFrom-Json
+    $tweaks = Get-Content $RegistryJson -Raw | ConvertFrom-Json
     
     $hives = @{
         "SYSTEM" = "$MountPath\Windows\System32\config\SYSTEM"
@@ -31,15 +31,15 @@ function Invoke-OfflineRegistryHardening {
         $hivePath = $hives[$hiveName]
         $mountPoint = "HKLM\OFFLINE_$hiveName"
         try {
-            reg load $mountPoint $hivePath | Out-Null
-            $subTweaks = $tweaks | Where-Object { $_.Hive -eq "HKLM" -or $_.Hive -eq $hiveName } # Simple mapping
+            reg load $mountPoint $hivePath 2>&1 | Out-Null
+            $subTweaks = $tweaks | Where-Object { $_.Hive -eq "HKLM" -or $_.Hive -eq $hiveName }
             foreach ($t in $subTweaks) {
                 $target = "$mountPoint\$($t.Path)"
                 Write-Log "  Injecting: $($t.Name)"
-                # This is a simplified injector for the demo; production reg parsing handles types properly
-                reg add $target /v $t.Name /d $t.Data /f | Out-Null
+                $regType = if ($t.Type) { $t.Type } else { "REG_SZ" }
+                reg add $target /v $t.Name /t $regType /d $t.Data /f 2>&1 | Out-Null
             }
-            reg unload $mountPoint | Out-Null
+            reg unload $mountPoint 2>&1 | Out-Null
         } catch {
             Write-Log "  Failed to process hive $hiveName: $_" "WARN"
             reg unload $mountPoint 2>$null
@@ -47,14 +47,52 @@ function Invoke-OfflineRegistryHardening {
     }
 }
 
+function Invoke-OfflineServiceConfig {
+    param($MountPath, $ServiceConfigJson)
+    if (-not (Test-Path $ServiceConfigJson)) { return }
+    Write-Log "Applying Service Configurations..." "INFO"
+    $config = Get-Content $ServiceConfigJson -Raw | ConvertFrom-Json
+    $services = $config.services
+    
+    $regPath = "$MountPath\Windows\System32\config\SYSTEM\ControlSet001\Services"
+    $mountPoint = "HKLM\OFFLINE_SYSTEM"
+    try {
+        reg load $mountPoint "$MountPath\Windows\System32\config\SYSTEM" 2>&1 | Out-Null
+        
+        foreach ($svcName in $services.PSObject.Properties.Name) {
+            $svc = $services.$svcName
+            $startType = switch ($svc.Startup) {
+                "Automatic" { 2 }
+                "Automatic (Delayed)" { 2 }
+                "Manual" { 3 }
+                "Disabled" { 4 }
+                default { 2 }
+            }
+            $target = "$mountPoint\ControlSet001\Services\$svcName"
+            reg add $target /v Start /t REG_DWORD /d $startType /f 2>&1 | Out-Null
+            
+            if ($svc.Startup -eq "Automatic (Delayed)" -and $svc.DelayS -gt 0) {
+                $delayedKey = "$target\Parameters"
+                reg add $delayedKey /v ServiceDelayedAutostart /t REG_DWORD /d 1 /f 2>&1 | Out-Null
+            }
+            Write-Log "  Configured: $svcName -> $($svc.Startup)"
+        }
+        reg unload $mountPoint 2>&1 | Out-Null
+    } catch {
+        Write-Log "  Failed to configure services: $_" "WARN"
+        reg unload $mountPoint 2>$null
+    }
+}
+
 function Invoke-OfflineDebloat {
     param($MountPath, $ConfigJson)
     if (-not (Test-Path $ConfigJson)) { return }
     Write-Log "Purging Queued AppX Packages..." "INFO"
-    $apps = Get-Content $ConfigJson | ConvertFrom-Json | Where-Object { $_.IsSelected }
+    $json = Get-Content $ConfigJson -Raw | ConvertFrom-Json
+    $apps = $json.packages | Where-Object { $_.risk -eq "safe" -or $_.IsSelected }
     foreach ($app in $apps) {
-        Write-Log "  Removing Package: $($app.Name)"
-        dism /Image:$MountPath /Remove-ProvisionedAppxPackage /PackageName:$app.Name | Out-Null
+        Write-Log "  Removing Package: $($app.name)"
+        dism /Image:$MountPath /Remove-ProvisionedAppxPackage /PackageName:$app.name | Out-Null
     }
 }
 
@@ -1342,6 +1380,9 @@ try {
     if (-not (Test-Path $answerFilePlaceholder)) {
         $answerFilePlaceholder = Join-Path $script:ProjectRoot "autounattend.xml"
     }
+    # Config/ is canonical — keep root copy in sync so they never diverge
+    Copy-Item -Path $answerFilePlaceholder -Destination (Join-Path $script:ProjectRoot "autounattend.xml") -Force
+    Write-Log "Synced Config/autounattend.xml → root" "SUCCESS"
 
     # Dynamic Disk Detection (Phase 3)
     $targetDiskID = Get-TargetNVMeDisk
@@ -1396,7 +1437,8 @@ try {
     Invoke-OfflineDriverStore -MountPath $MountDir -ConfigJson $DriverQueueJson
 
     # Phase 6: Registry & Services (V3.1 Professional)
-    Invoke-OfflineHardening -MountPath $MountDir -RegistryJson $RegistryQueueJson -ServicesJson $ServiceConfigJson
+    Invoke-OfflineRegistryHardening -MountPath $MountDir -RegistryJson $RegistryQueueJson
+    Invoke-OfflineServiceConfig -MountPath $MountDir -ServiceConfigJson $ServiceConfigJson
     
     # Phase 7: FSUtil Tuning (V3.1 Professional)
     Invoke-FsutilOptimizations -MountPath $MountDir
