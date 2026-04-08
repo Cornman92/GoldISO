@@ -122,3 +122,65 @@ Describe "SettingsMigration Directory" {
         Test-Path $restoreScript | Should -Be $true
     }
 }
+
+Describe "Queue Configuration Files (V3.1)" {
+    It "services-config.json exists" {
+        $servicesConfig = Join-Path $ProjectRoot "Config\services-config.json"
+        Test-Path $servicesConfig | Should -Be $true
+    }
+
+    It "services-config.json is valid JSON" {
+        $servicesConfig = Join-Path $ProjectRoot "Config\services-config.json"
+        { Get-Content $servicesConfig -Raw | ConvertFrom-Json } | Should -Not -Throw
+    }
+
+    It "queued-registry.json exists" {
+        $regQueue = Join-Path $ProjectRoot "Config\queued-registry.json"
+        Test-Path $regQueue | Should -Be $true
+    }
+
+    It "queued-registry.json is valid JSON" {
+        $regQueue = Join-Path $ProjectRoot "Config\queued-registry.json"
+        { Get-Content $regQueue -Raw | ConvertFrom-Json } | Should -Not -Throw
+    }
+
+    It "driver-queue.json exists" {
+        $driverQueue = Join-Path $ProjectRoot "Config\driver-queue.json"
+        Test-Path $driverQueue | Should -Be $true
+    }
+
+    It "driver-queue.json is valid JSON" {
+        $driverQueue = Join-Path $ProjectRoot "Config\driver-queue.json"
+        { Get-Content $driverQueue -Raw | ConvertFrom-Json } | Should -Not -Throw
+    }
+
+    It "debloat-list.json exists" {
+        $debloatList = Join-Path $ProjectRoot "Config\debloat-list.json"
+        Test-Path $debloatList | Should -Be $true
+    }
+
+    It "debloat-list.json is valid JSON" {
+        $debloatList = Join-Path $ProjectRoot "Config\debloat-list.json"
+        { Get-Content $debloatList -Raw | ConvertFrom-Json } | Should -Not -Throw
+    }
+}
+
+Describe "package.json" {
+    It "package.json exists" {
+        $packageJsonPath = Join-Path $ProjectRoot "Config\package.json"
+        Test-Path $packageJsonPath | Should -Be $true
+    }
+
+    It "package.json is valid JSON" {
+        $packageJsonPath = Join-Path $ProjectRoot "Config\package.json"
+        { Get-Content $packageJsonPath -Raw | ConvertFrom-Json } | Should -Not -Throw
+    }
+
+    It "package.json has required fields" {
+        $packageJsonPath = Join-Path $ProjectRoot "Config\package.json"
+        $pkg = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
+        $pkg.name | Should -Not -BeNullOrEmpty
+        $pkg.version | Should -Not -BeNullOrEmpty
+        $pkg.scripts | Should -Not -BeNullOrEmpty
+    }
+}

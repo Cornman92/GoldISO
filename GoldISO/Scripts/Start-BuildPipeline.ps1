@@ -30,14 +30,28 @@
 .PARAMETER Branch
     Git branch to build from. Default: current branch
 
+.PARAMETER Mode
+    Pipeline execution mode:
+      Quick    — Build + validate, no VM deploy (default)
+      VM       — All stages including VM deploy
+      Validate — Validation only, no build
+
 .EXAMPLE
-    .\Start-BuildPipeline.ps1 -DeployToVM
+    .\Start-BuildPipeline.ps1
+
+.EXAMPLE
+    .\Start-BuildPipeline.ps1 -Mode VM -VMName "GoldISO-Test"
+
+.EXAMPLE
+    .\Start-BuildPipeline.ps1 -Mode Validate
 
 .EXAMPLE
     .\Start-BuildPipeline.ps1 -KeepArtifacts 3 -Verbose
 #>
 [CmdletBinding()]
 param(
+    [ValidateSet("Quick", "VM", "Validate")]
+    [string]$Mode = "Quick",
     [switch]$SkipTests,
     [switch]$DeployToVM,
     [string]$VMName = "GoldISO-Test-$(Get-Date -Format yyyyMMdd-HHmmss)",
@@ -136,7 +150,12 @@ function Invoke-PipelineStage {
 
 Write-PipelineLog "GoldISO Build Pipeline Started" "STAGE"
 Write-PipelineLog "Timestamp: $timestamp" "INFO"
+Write-PipelineLog "Mode: $Mode" "INFO"
 Write-PipelineLog "Working Directory: $(Get-Location)" "INFO"
+
+# Mode overrides: VM enables VM deploy; Validate disables build
+if ($Mode -eq "VM")      { $DeployToVM = $true }
+if ($Mode -eq "Validate") { $SkipTests  = $false }
 
 #endregion
 
@@ -362,10 +381,13 @@ try {
     # Execute stages
     Invoke-PipelineStage -Name "Environment Check" -ScriptBlock $stage_EnvCheck
     Invoke-PipelineStage -Name "Source Validation" -ScriptBlock $stage_SourceValidation -ContinueOnError:$SkipTests
-    Invoke-PipelineStage -Name "Build" -ScriptBlock $stage_Build
-    Invoke-PipelineStage -Name "Post-Build Validation" -ScriptBlock $stage_PostBuildValidation -ContinueOnError:$SkipTests
-    Invoke-PipelineStage -Name "Artifact Cleanup" -ScriptBlock $stage_ArtifactCleanup -ContinueOnError
-    Invoke-PipelineStage -Name "Deploy to VM" -ScriptBlock $stage_DeployToVM -ContinueOnError
+
+    if ($Mode -ne "Validate") {
+        Invoke-PipelineStage -Name "Build" -ScriptBlock $stage_Build
+        Invoke-PipelineStage -Name "Post-Build Validation" -ScriptBlock $stage_PostBuildValidation -ContinueOnError:$SkipTests
+        Invoke-PipelineStage -Name "Artifact Cleanup" -ScriptBlock $stage_ArtifactCleanup -ContinueOnError
+        Invoke-PipelineStage -Name "Deploy to VM" -ScriptBlock $stage_DeployToVM -ContinueOnError
+    }
 
     $script:PipelineStatus = "Success"
 }

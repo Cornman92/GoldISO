@@ -1,5 +1,22 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+<#
+.SYNOPSIS
+    GoldISO Control Center - Professional GUI for ISO building and system configuration.
+.DESCRIPTION
+    WPF-based graphical interface for GoldISO build system. Provides configuration,
+    tuning, driver management, services editing, and build execution.
+.NOTES
+    Version: 3.1 Professional
+    Requires: PowerShell 5.1+, Administrator privileges
+#>
+
+$script:ProjectRoot = Split-Path $PSScriptRoot -Parent
+$script:LogFile = Join-Path $script:ProjectRoot "Logs\GoldISO-GUI.log"
+
+if (-not (Test-Path (Split-Path $script:LogFile -Parent))) {
+    New-Item -ItemType Directory -Path (Split-Path $script:LogFile -Parent) -Force | Out-Null
+}
 
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 
@@ -157,8 +174,8 @@ function Import-ConfigFromFile {
         $UI_CfgNoIPv6.IsChecked = $script:Config.network.disable_ipv6
         $UI_CfgTCPWin.IsChecked = $script:Config.network.tcp_window_scaling
         $UI_CfgNoTelemetry.IsChecked = $script:Config.optimizations.telemetry_disabled
-        $UI_CfgNoDiag.IsChecked = $script:Privacy.disable_diag_data
-        $UI_CfgNoLocation.IsChecked = $script:Privacy.disable_location
+        $UI_CfgNoDiag.IsChecked = $script:Config.privacy.disable_diag_data
+        $UI_CfgNoLocation.IsChecked = $script:Config.privacy.disable_location
         $UI_CfgDefender.IsChecked = $script:Config.optimizations.win_defender_enabled
         $UI_CfgAcrylic.IsChecked = $script:Config.visuals.acrylic_enabled
         $UI_CfgNoStartSound.IsChecked = $script:Config.visuals.disable_startup_sound
