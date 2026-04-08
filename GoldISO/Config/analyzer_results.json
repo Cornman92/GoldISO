@@ -1,0 +1,380 @@
+[
+  {
+    "Message": "Empty catch block is used. Please use Write-Error or throw statements in catch blocks.",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "StartLineNumber": 92,
+      "StartColumnNumber": 7,
+      "EndLineNumber": 92,
+      "EndColumnNumber": 16,
+      "Text": "catch { }",
+      "StartOffset": 3166,
+      "EndOffset": 3175
+    },
+    "RuleName": "PSAvoidUsingEmptyCatchBlock",
+    "Severity": 1,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": null,
+    "IsSuppressed": false,
+    "Line": 92,
+    "Column": 7
+  },
+  {
+    "Message": "Empty catch block is used. Please use Write-Error or throw statements in catch blocks.",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "StartLineNumber": 136,
+      "StartColumnNumber": 15,
+      "EndLineNumber": 136,
+      "EndColumnNumber": 24,
+      "Text": "catch { }",
+      "StartOffset": 4684,
+      "EndOffset": 4693
+    },
+    "RuleName": "PSAvoidUsingEmptyCatchBlock",
+    "Severity": 1,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": null,
+    "IsSuppressed": false,
+    "Line": 136,
+    "Column": 15
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 72,
+      "StartColumnNumber": 1,
+      "EndLineNumber": 72,
+      "EndColumnNumber": 5,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": "    "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 72,
+    "Column": 1
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 189,
+      "StartColumnNumber": 14,
+      "EndLineNumber": 189,
+      "EndColumnNumber": 15,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": " "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 189,
+    "Column": 14
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 201,
+      "StartColumnNumber": 1,
+      "EndLineNumber": 201,
+      "EndColumnNumber": 5,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": "    "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 201,
+    "Column": 1
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 223,
+      "StartColumnNumber": 49,
+      "EndLineNumber": 223,
+      "EndColumnNumber": 50,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": " "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 223,
+    "Column": 49
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 224,
+      "StartColumnNumber": 84,
+      "EndLineNumber": 224,
+      "EndColumnNumber": 85,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": " "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 224,
+    "Column": 84
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 226,
+      "StartColumnNumber": 14,
+      "EndLineNumber": 226,
+      "EndColumnNumber": 15,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": " "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 226,
+    "Column": 14
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 245,
+      "StartColumnNumber": 1,
+      "EndLineNumber": 245,
+      "EndColumnNumber": 5,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": "    "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 245,
+    "Column": 1
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 285,
+      "StartColumnNumber": 1,
+      "EndLineNumber": 285,
+      "EndColumnNumber": 9,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": "        "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 285,
+    "Column": 1
+  },
+  {
+    "Message": "Line has trailing whitespace",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.ScriptPosition",
+      "StartLineNumber": 313,
+      "StartColumnNumber": 1,
+      "EndLineNumber": 313,
+      "EndColumnNumber": 5,
+      "StartOffset": 0,
+      "EndOffset": 0,
+      "Text": "    "
+    },
+    "RuleName": "PSAvoidTrailingWhitespace",
+    "Severity": 0,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": [
+      ""
+    ],
+    "IsSuppressed": false,
+    "Line": 313,
+    "Column": 1
+  },
+  {
+    "Message": "File 'Get-SystemHealth.ps1' uses Write-Host. Avoid using Write-Host because it might not work in all hosts, does not work when there is no host, and (prior to PS 5.0) cannot be suppressed, captured, or redirected. Instead, use Write-Output, Write-Verbose, or Write-Information.",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "StartLineNumber": 70,
+      "StartColumnNumber": 9,
+      "EndLineNumber": 70,
+      "EndColumnNumber": 39,
+      "Text": "Write-Host \"[$Level] $Message\"",
+      "StartOffset": 2277,
+      "EndOffset": 2307
+    },
+    "RuleName": "PSAvoidUsingWriteHost",
+    "Severity": 1,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": null,
+    "SuggestedCorrections": null,
+    "IsSuppressed": false,
+    "Line": 70,
+    "Column": 9
+  },
+  {
+    "Message": "The parameter 'Detailed' has been declared but not used.",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "StartLineNumber": 27,
+      "StartColumnNumber": 13,
+      "EndLineNumber": 27,
+      "EndColumnNumber": 22,
+      "Text": "$Detailed",
+      "StartOffset": 766,
+      "EndOffset": 775
+    },
+    "RuleName": "PSReviewUnusedParameter",
+    "Severity": 1,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": "Detailed",
+    "SuggestedCorrections": null,
+    "IsSuppressed": false,
+    "Line": 27,
+    "Column": 13
+  },
+  {
+    "Message": "The parameter 'CheckUpdates' has been declared but not used.",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "StartLineNumber": 28,
+      "StartColumnNumber": 13,
+      "EndLineNumber": 28,
+      "EndColumnNumber": 26,
+      "Text": "$CheckUpdates",
+      "StartOffset": 789,
+      "EndOffset": 802
+    },
+    "RuleName": "PSReviewUnusedParameter",
+    "Severity": 1,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": "CheckUpdates",
+    "SuggestedCorrections": null,
+    "IsSuppressed": false,
+    "Line": 28,
+    "Column": 13
+  },
+  {
+    "Message": "The parameter 'ExportFormat' has been declared but not used.",
+    "Extent": {
+      "File": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+      "StartScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "EndScriptPosition": "System.Management.Automation.Language.InternalScriptPosition",
+      "StartLineNumber": 30,
+      "StartColumnNumber": 13,
+      "EndLineNumber": 30,
+      "EndColumnNumber": 26,
+      "Text": "$ExportFormat",
+      "StartOffset": 857,
+      "EndOffset": 870
+    },
+    "RuleName": "PSReviewUnusedParameter",
+    "Severity": 1,
+    "ScriptName": "Get-SystemHealth.ps1",
+    "ScriptPath": "C:\\Users\\C-Man\\GoldISO\\Scripts\\Get-SystemHealth.ps1",
+    "RuleSuppressionID": "ExportFormat",
+    "SuggestedCorrections": null,
+    "IsSuppressed": false,
+    "Line": 30,
+    "Column": 13
+  }
+]
