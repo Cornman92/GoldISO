@@ -148,4 +148,4 @@ Rules:
 - Disk IDs (0, 1, 2) are machine-specific to this hardware
 - Network is disabled during OOBE; re-enabled via FirstLogonCommands
 - No TPM/Secure Boot bypasses
-- Test in Hyper-V VM (`Scripts/New-TestVM.ps1`) before bare-metal deployment
+- Test in Hyper-V VM (`Scripts/Testing/New-TestVM.ps1`) before bare-metal deployment
