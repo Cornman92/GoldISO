@@ -1,0 +1,83 @@
+name: GoldISO Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_drivers:
+        description: 'Skip driver injection'
+        required: false
+        default: 'false'
+      skip_packages:
+        description: 'Skip package injection'
+        required: false
+        default: 'false'
+      disk_layout:
+        description: 'Disk layout'
+        required: false
+        default: 'GamerOS-3Disk'
+        type: choice
+        options:
+          - GamerOS-3Disk
+          - SingleDisk-DevGaming
+          - SingleDisk-Generic
+
+jobs:
+  build:
+    runs-on: windows-latest
+    environment: build
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Verify Source ISO
+      run: |
+        if (-not (Test-Path "Win11-25H2x64v2.iso")) {
+          Write-Host "##vso[task.setvariable variable=ISO_EXISTS;isfalse=true]ISO not found"
+        }
+    
+    - name: Setup PowerShell
+      run: |
+        $PSVersionTable.PSVersion
+    
+    - name: Run Environment Tests
+      run: |
+        .\Scripts\Test-Environment.ps1
+    
+    - name: Validate Answer File
+      run: |
+        .\Scripts\Test-UnattendXML.ps1
+    
+    - name: Build ISO
+      if: env.ISO_EXISTS == 'true'
+      shell: pwsh
+      run: |
+        $params = @{
+          WorkingDir = "C:\GoldISO_Build"
+          DiskLayout = "${{ github.event.inputs.disk_layout }}"
+        }
+        if ("${{ github.event.inputs.skip_drivers }}" -eq "true") {
+          $params.SkipDriverInjection = $true
+        }
+        if ("${{ github.event.inputs.skip_packages }}" -eq "true") {
+          $params.SkipPackageInjection = $true
+        }
+        .\Scripts\Build\Build-GoldISO.ps1 @params
+    
+    - name: Upload Artifact
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: GoldISO-Artifact
+        path: |
+          *.iso
+          *.sha256
+        retention-days: 7
+    
+    - name: Upload Logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs
+        path: |
+          Logs/
+        retention-days: 30

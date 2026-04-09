@@ -1,0 +1,57 @@
+name: GoldISO Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Pester
+      run: |
+        Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+    
+    - name: Run Tests
+      run: |
+        Invoke-Pester -Path 'Tests' -Output Detailed
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: Tests/Results/
+        retention-days: 30
+
+  validate:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate XML
+      run: |
+        Get-ChildItem -Path 'Config' -Filter '*.xml' -Recurse | ForEach-Object {
+          [xml]$content = Get-Content $_.FullName
+          if ($LASTEXITCODE -ne 0) { throw "Invalid XML: $($_.Name)" }
+        }
+    
+    - name: Validate JSON
+      run: |
+        Get-ChildItem -Path 'Config' -Filter '*.json' -Recurse | ForEach-Object {
+          $content = Get-Content $_.FullName -Raw | ConvertFrom-Json
+        }
+    
+    - name: Check Script Syntax
+      run: |
+        Get-ChildItem -Path 'Scripts' -Filter '*.ps1' -Recurse | ForEach-Object {
+          $errors = $null
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $_.FullName -Raw), [ref]$errors)
+          if ($errors) { throw "Syntax error in $($_.Name)" }
+        }
