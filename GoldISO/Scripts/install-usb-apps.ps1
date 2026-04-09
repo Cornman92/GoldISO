@@ -1,5 +1,13 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+
+# Import common module (may not exist in WinPE/target environment, so wrap in try/catch)
+try {
+    Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force -ErrorAction Stop
+} catch {
+    # Module not available in target environment, logging defined below
+}
+
 <#
 .SYNOPSIS
     Installs applications using winget from USB drive or online sources.
@@ -34,31 +42,10 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+
+# Initialize centralized logging (or use local fallback)
 $logFile = "C:\ProgramData\Winhance\Unattend\Logs\usb-apps-install.log"
-
-function Write-Log {
-    param(
-        [string]$Message,
-        [ValidateSet("INFO","SUCCESS","WARNING","ERROR","SKIP")][string]$Level = "INFO"
-    )
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp] [$Level] $Message"
-
-    $color = switch ($Level) {
-        "ERROR" { "Red" }
-        "WARNING" { "Yellow" }
-        "SUCCESS" { "Green" }
-        "SKIP" { "Cyan" }
-        default { "White" }
-    }
-    Write-Host $entry -ForegroundColor $color
-
-    $logDir = Split-Path $logFile -Parent
-    if (-not (Test-Path $logDir)) {
-        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-    }
-    Add-Content -Path $logFile -Value $entry -Encoding UTF8
-}
+Initialize-Logging -LogPath $logFile
 
 function Test-WingetAvailable {
     try {

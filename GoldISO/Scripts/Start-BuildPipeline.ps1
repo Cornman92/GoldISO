@@ -210,6 +210,19 @@ $stage_SourceValidation = {
 
     Write-PipelineLog "Validating source files..." "INFO"
 
+    # Run PSScriptAnalyzer lint
+    $lintScript = Join-Path $PSScriptRoot "Invoke-Lint.ps1"
+    if (Test-Path $lintScript) {
+        Write-PipelineLog "  Running PSScriptAnalyzer lint..." "INFO"
+        $lintExit = 0
+        & $lintScript -ErrorAction SilentlyContinue
+        $lintExit = $LASTEXITCODE
+        if ($lintExit -ne 0) {
+            throw "Lint check failed — fix script errors before building"
+        }
+        Write-PipelineLog "  Lint: Passed" "SUCCESS"
+    }
+
     # Validate autounattend.xml exists
     $unattendPath = Join-Path (Get-GoldISORoot) "autounattend.xml"
     if (-not (Test-Path $unattendPath)) {

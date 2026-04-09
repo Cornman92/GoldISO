@@ -257,3 +257,79 @@ In the autounattend.xml (root level), there's a Reseal component for Audit mode:
 - Audit Mode allows unlimited customization time before finalizing
 - The captured WIM includes all installed apps, drivers, and settings
 - Multiple WIM indexes can be created for different configurations
+
+---
+
+## Phase 5 Enhancements
+
+### Capture-Image.ps1 — Checkpoint & Resume
+
+The script now writes a checkpoint JSON file alongside each capture so interrupted
+captures can be detected and restarted.
+
+**Checkpoint file:** `<CapturePath>.checkpoint.json`
+
+```json
+{
+  "Status":      "Started | Completed | Failed",
+  "SourceDrive": "C:\\",
+  "CapturePath": "E:\\GoldISO\\Capture.wim",
+  "StartTime":   "2026-01-01 12:00:00",
+  "TargetDisk":  2,
+  "EndTime":     "2026-01-01 12:35:00",
+  "FailReason":  "DISM exit code 11"
+}
+```
+
+**Resume behavior:**
+
+| Checkpoint state | Default | With `-Resume` |
+|-----------------|---------|---------------|
+| No checkpoint file | Fresh capture | Fresh capture |
+| Status = Completed | Exits 0 (already done) | Exits 0 |
+| Status = Started | Exits 1 with warning | Deletes partial WIM, restarts |
+| Status = Failed | Exits 1 with warning | Deletes partial WIM, restarts |
+
+**Real-time DISM progress:** stdout is redirected to a temp file and polled every
+500 ms; `Write-Progress` updates with percentage and elapsed time during capture.
+
+**New parameter:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `-Resume` | When set, clears a partial/failed capture and restarts from scratch |
+
+### Apply-Image.ps1 — Disk Layout Selection
+
+The script now accepts a `-DiskLayout` parameter that selects which partition
+structure to apply to the target disk before image deployment.
+
+**New parameter:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-DiskLayout` | `GamerOS-3Disk` | Layout name: `GamerOS-3Disk`, `SingleDisk-DevGaming`, `SingleDisk-Generic` |
+
+**Improved USB WIM detection:** instead of a fixed path list, the script now:
+1. Enumerates all removable volumes via `Get-Disk | Where-Object BusType -eq USB`
+2. Also checks `Get-Volume | Where-Object DriveType -eq Removable`
+3. Scans all accessible partitions for `.wim` files
+4. Picks the **largest** WIM found (most likely to be the intended capture)
+
+### Typical GamerOS Build Run
+
+```powershell
+# Boot WinPE from USB.
+
+# Capture gold image from Disk 2 (NVMe, post-sysprep):
+X:\Scripts\Capture-Image.ps1 -TargetDisk 2 -CapturePath E:\Capture.wim -MoveToUSB
+
+# Deploy to a fresh 3-disk GamerOS machine:
+X:\Scripts\Apply-Image.ps1 -TargetDisk 2 -DiskLayout GamerOS-3Disk
+
+# First boot FirstLogonCommands (from autounattend.xml):
+#   Order 48: ProtectLetters.ps1
+#   Order 49: Create D:\P-Apps, D:\Scratch
+#   Order 50: Create E:\Media, E:\Backups
+#   Order 51: pnputil post-boot driver injection
+```

@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pass: oobeSystem
+  Purpose: Out-of-Box Experience and First Logon configuration
+  
+  This pass runs during OOBE and first logon. Use for:
+  - OOBE configuration (hiding pages, network settings)
+  - FirstLogonCommands for post-setup tasks
+  - User environment setup
+-->
+<settings pass="oobeSystem" xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+  <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+    <OOBE>
+      <HideEULAPage>true</HideEULAPage>
+      <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+      <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+      <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+      <NetworkLocation>{{NETWORK_LOCATION}}</NetworkLocation>
+      <ProtectYourPC>{{PROTECT_YOUR_PC}}</ProtectYourPC>
+      <SkipUserOOBE>{{SKIP_USER_OOBE}}</SkipUserOOBE>
+      <SkipMachineOOBE>{{SKIP_MACHINE_OOBE}}</SkipMachineOOBE>
+      <HideLocalAccountScreen>true</HideLocalAccountScreen>
+      <HideOEMScreen>true</HideOEMScreen>
+      <DisableInternetConnection>{{DISABLE_INTERNET}}</DisableInternetConnection>
+    </OOBE>
+    
+    <!-- === OOBE / FIRST LOGON COMMANDS === -->
+    <FirstLogonCommands>
+      <!-- Network & Infrastructure -->
+      <SynchronousCommand wcm:action="add">
+        <Order>1</Order>
+        <Description>Enables Network Adapters After OOBE Completes</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -Command "Get-NetAdapter | Enable-NetAdapter -Confirm:$false"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>2</Order>
+        <Description>Delete Network Recovery Scheduled Task</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -Command "Unregister-ScheduledTask -TaskName 'NetworkRecovery' -Confirm:$false"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>3</Order>
+        <Description>Install Chocolatey Package Manager</Description>
+        <CommandLine>powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" &gt;&gt; "C:\Windows\Setup\Scripts\setup.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>4</Order>
+        <Description>Install All Applications (Winget + USB + Portable + Downloads)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\ProgramData\Winhance\Unattend\Scripts\install-usb-apps.ps1" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\usb-apps-install.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>5</Order>
+        <Description>Apply Group Policy Settings via LGPO (Privacy, Update, Gaming)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\ProgramData\Winhance\Unattend\Scripts\Apply-GPOSettings.ps1" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\gpo-application.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>6</Order>
+        <Description>Set DNS to Cloudflare (1.1.1.1) and Google (8.8.8.8)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -Command "$iface = Get-NetIPInterface | Where-Object {$_.AddressFamily -eq 'IPv4' -and $_.ConnectionState -eq 'Connected'} | Select-Object -First 1; if ($iface) { Set-DnsClientServerAddress -InterfaceAlias $iface.InterfaceAlias -ServerAddresses 1.1.1.1,8.8.8.8 }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>7</Order>
+        <Description>Set Power Plan to High Performance</Description>
+        <CommandLine>powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- User Settings (NOTE: File extensions, tips, background apps, advertising ID now handled via GPO User-Policy.txt) -->
+      <SynchronousCommand wcm:action="add">
+        <Order>8</Order>
+        <Description>Configure Proxy Settings (Disable)</Description>
+        <CommandLine>reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Privacy Settings (NOTE: Location, sync, feedback, GameDVR now handled via GPO Computer-Policy.txt) -->
+      <SynchronousCommand wcm:action="add">
+        <Order>9</Order>
+        <Description>Disable Camera Access for Apps</Description>
+        <CommandLine>reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam" /v Value /t REG_SZ /d Deny /f</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>10</Order>
+        <Description>Disable Microphone Access for Apps</Description>
+        <CommandLine>reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone" /v Value /t REG_SZ /d Deny /f</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Gaming & Security -->
+      <SynchronousCommand wcm:action="add">
+        <Order>11</Order>
+        <Description>Add Windows Defender Exclusions</Description>
+        <CommandLine>powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Add-MpPreference -ExclusionProcess 'chrome.exe','firefox.exe','code.exe','devenv.exe','setup.exe','*.tmp'"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Tweaks Execution -->
+      <SynchronousCommand wcm:action="add">
+        <Order>12</Order>
+        <Description>Run System-Level Tweaks (Registry-only optimizations)</Description>
+        <CommandLine>cmd.exe /c "if exist C:\ProgramData\Winhance\Unattend\Scripts\tweaks-system.cmd C:\ProgramData\Winhance\Unattend\Scripts\tweaks-system.cmd &gt;&gt; C:\ProgramData\Winhance\Unattend\Logs\tweaks-system.log 2&gt;&amp;1"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>13</Order>
+        <Description>Run User-Level Tweaks (Registry-only optimizations)</Description>
+        <CommandLine>cmd.exe /c "if exist C:\ProgramData\Winhance\Unattend\Scripts\tweaks-user.cmd C:\ProgramData\Winhance\Unattend\Scripts\tweaks-user.cmd &gt;&gt; C:\ProgramData\Winhance\Unattend\Logs\tweaks-user.log 2&gt;&amp;1"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- RAM Disk -->
+      <SynchronousCommand wcm:action="add">
+        <Order>14</Order>
+        <Description>Install SoftPerfect RAM Disk</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\ProgramData\Winhance\Unattend\Scripts\install-ramdisk.ps1" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\ramdisk-install.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>15</Order>
+        <Description>Create RAM Disk</Description>
+        <CommandLine>cmd.exe /c "if exist C:\ProgramData\Winhance\Unattend\Scripts\createramdisk.cmd C:\ProgramData\Winhance\Unattend\Scripts\createramdisk.cmd &gt;&gt; C:\ProgramData\Winhance\Unattend\Logs\ramdisk-create.log 2&gt;&amp;1"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>16</Order>
+        <Description>Redirect Browser Cache to RAM Disk</Description>
+        <CommandLine>cmd.exe /c "if exist C:\ProgramData\Winhance\Unattend\Scripts\browserredirectcache.cmd C:\ProgramData\Winhance\Unattend\Scripts\browserredirectcache.cmd &gt;&gt; C:\ProgramData\Winhance\Unattend\Logs\browser-cache.log 2&gt;&amp;1"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Dev Tools -->
+      <SynchronousCommand wcm:action="add">
+        <Order>17</Order>
+        <Description>Add Git to System PATH</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "if(-not (Test-Path 'C:\Program Files\Git\bin')) { &amp; 'C:\Program Files\Git\cmd\git.exe' --version 2&gt;$null; if($LASTEXITCODE -eq 0) { $envPath = [Environment]::GetEnvironmentVariable('Path', 'Machine'); if(-not $envPath.Contains('C:\Program Files\Git\bin')) { [Environment]::SetEnvironmentVariable('Path', ($envPath + ';C:\Program Files\Git\bin'), 'Machine') } } }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- System Restore -->
+      <SynchronousCommand wcm:action="add">
+        <Order>18</Order>
+        <Description>Enable System Restore and create initial restore point</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Enable-ComputerRestore -Drive 'C:\'; Set-RestorePoint -RestorePointType MODIFY_SETTINGS -Description 'Initial Setup'"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- WinUtil -->
+      <SynchronousCommand wcm:action="add">
+        <Order>19</Order>
+        <Description>Run WinUtil (conditional on config file existence)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "if (Test-Path 'C:\ProgramData\Winhance\Unattend\Scripts\winutil-config.json') { &amp; 'C:\ProgramData\Winhance\Unattend\Scripts\winutil.ps1' -Noui -Run -Config 'C:\ProgramData\Winhance\Unattend\Scripts\winutil-config.json' }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\winutil.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Additional Gaming/Performance Tweaks (NOTE: Copilot, Recall, ClickToRun, Bing Search now in GPO Computer-Policy.txt) -->
+      
+      <!-- Additional Gaming/Performance Tweaks -->
+      <!-- NOTE: Windows Copilot, Recall, ClickToRun, Bing Search suggestions configured via GPO Computer-Policy.txt -->
+      <!-- NOTE: Storage Sense configured via GPO User-Policy.txt and Computer-Policy.txt -->
+      
+      <!-- Drive Optimizations -->
+      <SynchronousCommand wcm:action="add">
+        <Order>20</Order>
+        <Description>Exclude Gaming Drives from Windows Search Indexing</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -Command "Get-Volume | Where-Object {$_.DriveLetter -in @('D','E','F')} | ForEach-Object { $idx = $_.DriveLetter; $searchPath = $idx + ':\'; try { $ws = Get-Service -Name WSearch -ErrorAction SilentlyContinue; if ($ws.Status -eq 'Running') { Add-MSIndexingExclusionPath -Path $searchPath -ErrorAction SilentlyContinue } } catch {} }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>21</Order>
+        <Description>Disable Disk Defragmentation on Gaming Drives</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -Command "Get-Volume | Where-Object {$_.DriveLetter -in @('D','E')} | ForEach-Object { $dl = $_.DriveLetter; &amp; 'schtasks' /change /tn 'Microsoft\Windows\Defrag\ScheduledDefrag' /disable 2&gt;$null; $regPath = \"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce\"; if (Test-Path $regPath) { New-ItemProperty -Path $regPath -Name \"DefragExclude$dl\" -Value \"powershell.exe -NoProfile -WindowStyle Hidden -Command `\$defrag = Get-ScheduledTask -TaskName 'ScheduledDefrag' -ErrorAction SilentlyContinue; if (`$defrag) { `$defrag.Settings.Enabled = `$false }\" -PropertyType String -Force | Out-Null } }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Defender Exclusions -->
+      <SynchronousCommand wcm:action="add">
+        <Order>22</Order>
+        <Description>Add Dev Tool Defender Exclusions (dotnet, node, git)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "try { Add-MpPreference -ExclusionProcess 'dotnet.exe','node.exe','git.exe' -ErrorAction SilentlyContinue } catch {}"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Network Hardening -->
+      <SynchronousCommand wcm:action="add">
+        <Order>23</Order>
+        <Description>Fix DNS Configuration - Robust NIC Detection</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "try { Get-NetAdapter -Physical | Where-Object {$_.Status -eq 'Up'} | Sort-Object -Property InterfaceMetric | Select-Object -First 1 | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ServerAddresses 1.1.1.1,8.8.8.8 } } catch { Write-Host 'DNS config failed' }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>24</Order>
+        <Description>Block Additional Telemetry Endpoints via Hosts File</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$hostsPath = \"$env:SystemRoot\System32\drivers\etc\hosts\"; $telemetryHosts = @('0.0.0.0 settings-win.data.microsoft.com','0.0.0.0 settings-win-shv.data.microsoft.com','0.0.0.0 v20.events.data.microsoft.com','0.0.0.0 browser.events.data.msn.com','0.0.0.0 telemetry.microsoft.com','0.0.0.0 watson.telemetry.microsoft.com','0.0.0.0 ceuswatcab01.blob.core.windows.net'); $current = Get-Content $hostsPath -ErrorAction SilentlyContinue; $telemetryHosts | ForEach-Object { if ($current -notmatch [regex]::Escape($_)) { Add-Content -Path $hostsPath -Value $_ } }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Power Management -->
+      <SynchronousCommand wcm:action="add">
+        <Order>25</Order>
+        <Description>Enable GPU Power Management for High Performance</Description>
+        <CommandLine>powercfg /change standby-timeout-ac 0; powercfg /change monitor-timeout-ac 0; powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 100</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Directory Structure -->
+      <SynchronousCommand wcm:action="add">
+        <Order>26</Order>
+        <Description>Create Category Folders on C: Drive</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "foreach($f in 'Dev','Gaming','Utils','Media','Remote','Scripts'){ $p = Join-Path 'C:\' $f; if(-not(Test-Path $p)){ New-Item -ItemType Directory -Path $p -Force | Out-Null } }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Script Deployment -->
+      <SynchronousCommand wcm:action="add">
+        <Order>27</Order>
+        <Description>Copy GWIG Post-Install Scripts to C:\Scripts</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Scripts\FirstLogon-Setup.ps1\"){ $usbDrive=$d; break }}; if($usbDrive){ $src = Join-Path \"$usbDrive`:\Scripts\" $dst = 'C:\Scripts'; $files = @('FirstLogon-Setup.ps1','PostInstall-Setup.ps1','Install-Apps.ps1','tweaks-system.cmd','tweaks-user.cmd','Bootstrap.ps1','Bootstrap-DevEnvironment.ps1','Install-Runtimes.ps1','winget-install.ps1','Apply-Theme.ps1','post-setup.ps1','Setup-System.ps1','BrowserCacheRedirect.cmd','InstallEverything.cmd','Configure-SecondaryDrives.ps1','Configure-RemoteAccess.ps1'); foreach($f in $files){ $s = Join-Path $src $f; if(Test-Path $s){ Copy-Item $s $dst -Force } }; $fl = Join-Path $src 'FirstLogon'; if(Test-Path $fl){ Copy-Item \"$fl\*\" (Join-Path $dst 'FirstLogon') -Recurse -Force } }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>28</Order>
+        <Description>Deploy PowerShell Profile to C:\PowerShellProfile</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\PowerShellProfile\Microsoft.PowerShell_profile.ps1\"){ $usbDrive=$d; break }}; if($usbDrive){ $src = Join-Path \"$usbDrive`:\PowerShellProfile\" $dst = 'C:\PowerShellProfile'; robocopy $src $dst /E /NFL /NDL /NJH /NJS /nc /ns /np }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Hardware-Specific Drivers -->
+      <SynchronousCommand wcm:action="add">
+        <Order>29</Order>
+        <Description>Install NVIDIA RTX 3060 Ti Driver (Post-Boot)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Drivers\Display adapters\NVIDIA GeForce RTX 3060 Ti_32.0.15.6094\"){ $usbDrive=$d; break }}; if($usbDrive){ $drvPath = Join-Path \"$usbDrive`:\Drivers\Display adapters\NVIDIA GeForce RTX 3060 Ti_32.0.15.6094\" pnputil /add-driver \"$drvPath\*.inf\" /install }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>30</Order>
+        <Description>Install Logitech G403 HERO Driver (Post-Boot)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Drivers\Universal Serial Bus controllers\G403 HERO_1.1.77.5292\"){ $usbDrive=$d; break }}; if($usbDrive){ $drvPath = Join-Path \"$usbDrive`:\Drivers\Universal Serial Bus controllers\G403 HERO_1.1.77.5292\" pnputil /add-driver \"$drvPath\*.inf\" /install }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Application Install -->
+      <SynchronousCommand wcm:action="add">
+        <Order>31</Order>
+        <Description>Install GitHub CLI via Winget</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "winget install --id GitHub.cli --accept-source-agreements --accept-package-agreements"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Portable Apps -->
+      <SynchronousCommand wcm:action="add">
+        <Order>32</Order>
+        <Description>Copy Portable Apps to C:\Apps\Portable</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\PortableApps\7-ZipPortable\7-ZipPortable.exe\"){ $usbDrive=$d; break }}; if($usbDrive){ $src = Join-Path \"$usbDrive`:\PortableApps\" $dst = 'C:\Apps\Portable'; if(-not(Test-Path $dst)){ New-Item -ItemType Directory -Path $dst -Force | Out-Null }; $apps = @('7-ZipPortable','EverythingPortable','FreeCommanderPortable','Explorer++Portable','FileVoyagerPortable','AutorunsPortable','BleachBitPortable','ClamWinPortable','EmsisoftEmergencyKitPortable','InnoUnpackerPortable','PortableApps.com','JkDefragPortable','CPU-ZPortable','GPU-ZPortable','HWiNFOPortable','HWMonitorPortable','FileZillaPortable','ConsolePortable','CopyQPortable','DM2Portable','FreeFileSyncPortable','grepWinPortable','DittoPortable','DuplicateFilesFinderPortable','fcpyPortable','DaphnePortable','CommonFiles'); foreach($app in $apps){ $s = Join-Path $src $app; if(Test-Path $s){ Copy-Item $s \"$dst\$app\" -Recurse -Force } } }"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Remote Access -->
+      <SynchronousCommand wcm:action="add">
+        <Order>33</Order>
+        <Description>Enable RDP (scoped to Tailscale subnet 100.64.0.0/10)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -Value 0 -Type DWord -Force; Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name UserAuthentication -Value 0 -Type DWord -Force; Enable-NetFirewallRule -DisplayGroup 'Remote Desktop' -ErrorAction SilentlyContinue; Get-NetFirewallRule -DisplayGroup 'Remote Desktop' -ErrorAction SilentlyContinue | Where-Object { $_.Direction -eq 'Inbound' -and $_.Enabled -eq 'True' } | ForEach-Object { try { $_ | Get-NetFirewallAddressFilter | Set-NetFirewallAddressFilter -RemoteAddress '100.64.0.0/10' -ErrorAction SilentlyContinue } catch {} }; Add-LocalGroupMember -Group 'Remote Desktop Users' -Member ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) -ErrorAction SilentlyContinue" &gt;&gt; "C:\ProgramData\GoldISO\remote-access.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>34</Order>
+        <Description>Create Remote Access Setup shortcut on Desktop</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$dst = 'C:\Scripts\Configure-RemoteAccess.ps1'; if(-not(Test-Path $dst)){ foreach($d in 'D','E','F','G','H','I','J','K'){ if(Test-Path \"$d`:\Scripts\Configure-RemoteAccess.ps1\"){ Copy-Item \"$d`:\Scripts\Configure-RemoteAccess.ps1\" $dst -Force; break } } }; $sh = New-Object -ComObject WScript.Shell; $lnk = $sh.CreateShortcut('C:\Users\Public\Desktop\Setup Remote Access.lnk'); $lnk.TargetPath = 'powershell.exe'; $lnk.Arguments = '-NoProfile -ExecutionPolicy Bypass -File \"C:\Scripts\Configure-RemoteAccess.ps1\"'; $lnk.Description = 'Configure AnyDesk and Tailscale for remote access'; $lnk.WorkingDirectory = 'C:\Scripts'; $lnk.Save()"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      
+      <!-- Settings Migration -->
+      <SynchronousCommand wcm:action="add">
+        <Order>35</Order>
+        <Description>Restore user settings and application configurations from migration package</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\SettingsMigration\restore-settings.ps1"</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+
+      <!-- GamerOS-3Disk: Drive Letter Protection + Folder Creation -->
+      <!-- Protect reserved letters BEFORE creating folders so D: and E: are not stolen by removable media -->
+      <SynchronousCommand wcm:action="add">
+        <Order>36</Order>
+        <Description>Protect Reserved Drive Letters (D, E, R, etc.) from Removable Media</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\ProgramData\Winhance\Unattend\Scripts\ProtectLetters.ps1" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\protect-letters.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>37</Order>
+        <Description>Create GamerOS Folders on D: (P-Apps, Scratch)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "foreach ($f in @('P-Apps','Scratch')) { $p = Join-Path 'D:\' $f; if (-not (Test-Path $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\folder-creation.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+      <SynchronousCommand wcm:action="add">
+        <Order>38</Order>
+        <Description>Create GamerOS Folders on E: (Media, Backups)</Description>
+        <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "foreach ($f in @('Media','Backups')) { $p = Join-Path 'E:\' $f; if (-not (Test-Path $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\folder-creation.log" 2&gt;&amp;1</CommandLine>
+        <RequiresUserInput>false</RequiresUserInput>
+      </SynchronousCommand>
+    </FirstLogonCommands>
+  </component>
+</settings>

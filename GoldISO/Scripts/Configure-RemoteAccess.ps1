@@ -1,5 +1,9 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
 <#
 .SYNOPSIS
     Configure AnyDesk and Tailscale for remote access from iPhone (or any device).
@@ -58,18 +62,10 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
-$LogDir  = 'C:\ProgramData\GoldISO'
-$LogPath = "$LogDir\remote-access.log"
-$null    = New-Item -Path $LogDir -ItemType Directory -Force -ErrorAction SilentlyContinue
 
-function Write-Log {
-    param([string]$Message, [ValidateSet('INFO','SUCCESS','WARNING','ERROR')][string]$Level = 'INFO')
-    $ts    = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $entry = "[$ts] [$Level] $Message"
-    Add-Content -Path $LogPath -Value $entry -Encoding UTF8 -ErrorAction SilentlyContinue
-    $color = switch ($Level) { 'ERROR' { 'Red' } 'WARNING' { 'Yellow' } 'SUCCESS' { 'Green' } default { 'White' } }
-    Write-Host $entry -ForegroundColor $color
-}
+# Initialize centralized logging
+$logFile = Join-Path 'C:\ProgramData\GoldISO' 'remote-access.log'
+Initialize-Logging -LogPath $logFile
 
 function Wait-ForExe {
     param([string]$ExePath, [string]$WingetId, [int]$TimeoutSec = 120)

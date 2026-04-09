@@ -188,44 +188,25 @@ param(
     [string]$ServiceConfigJson = "C:\ProgramData\GoldISO\Config\services-config.json",
     [string]$RegistryQueueJson = "C:\ProgramData\GoldISO\Config\queued-registry.json",
     [string]$DebloatListJson  = "C:\ProgramData\GoldISO\Config\debloat-list.json",
-    [string]$DriverQueueJson   = "C:\ProgramData\GoldISO\Config\driver-queue.json"
+    [string]$DriverQueueJson   = "C:\ProgramData\GoldISO\Config\driver-queue.json",
+
+    # Modular Answer File System (V3.2)
+    [string]$ProfilePath = "",
+    [switch]$UseModular = $true,
+
+    # Build Performance (V3.2)
+    [switch]$ParallelDrivers = $false,
+    
+    # Build Checkpoint System (V3.2)
+    [switch]$Resume,
+    [string]$CheckpointPath = "",
+    [switch]$ClearCheckpoint,
+    
+    # Disk Layout Selection (V3.2)
+    [ValidateSet("GamerOS-3Disk", "SingleDisk-DevGaming", "SingleDisk-Generic")]
+    [string]$DiskLayout = "GamerOS-3Disk"
 )
 
-
-$ErrorActionPreference = "Continue"
-$script:ProjectRoot = Split-Path $PSScriptRoot -Parent
-$script:LogFile = "$WorkingDir\build.log"
-
-function Write-Log {
-    param([string]$Message, [string]$Level = "INFO", [switch]$NoConsole)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp] [$Level] $Message"
-    if (-not $NoConsole) {
-        switch ($Level) {
-            "ERROR" { Write-Host $entry -ForegroundColor Red }
-            "SUCCESS" { Write-Host $entry -ForegroundColor Green }
-            "WARN" { Write-Host $entry -ForegroundColor Yellow }
-            default { Write-Host $entry }
-        }
-    }
-    $logDir = Split-Path $script:LogFile -Parent
-    if ($logDir -and (Test-Path $logDir)) {
-        Add-Content -Path $script:LogFile -Value $entry -Encoding UTF8
-    }
-}
-
-function Test-Admin {
-    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    if (-not $isAdmin) {
-        Write-Log "ERROR: This script must be run as Administrator." "ERROR"
-        exit 1
-    }
-    Write-Log "Administrator check passed" "SUCCESS"
-}
-
-# ---------------------------------------------------------------------------
-# Resolve oscdimg.exe - PATH first, then well-known ADK install locations
-# ---------------------------------------------------------------------------
 function Resolve-OscdimgPath {
     $inPath = Get-Command oscdimg -ErrorAction SilentlyContinue
     if ($inPath) { return $inPath.Source }
@@ -812,21 +793,99 @@ function Export-SingleIndexWIM {
     }
 }
 
+function Add-DriversParallel {
+    param([string]$MountPath, [string]$DriversDir)
+    Write-Log "Injecting core drivers offline (PARALLEL mode - max 4 concurrent)..." "INFO"
+    # Extensions, Software components, APOs, Audio, Monitors injected post-boot via pnputil.
+
+    $driverCategories = @(
+        "IDE ATA ATAPI controllers",
+        "Network adapters",
+        "Storage controllers",
+        "System devices"
+    )
+    
+    $runspacePool = [runspacefactory]::CreateRunspacePool(1, 4)
+    $runspacePool.Open()
+    
+    $jobs = @()
+    $results = [System.Collections.Concurrent.ConcurrentBag]::new()
+    
+    foreach ($category in $driverCategories) {
+        $categoryPath = Join-Path $DriversDir $category
+        if (-not (Test-Path $categoryPath)) {
+            Write-Log "  Skipping: $category (not found)" "WARN"
+            continue
+        }
+        
+        $infFiles = Get-ChildItem $categoryPath -Recurse -File -Filter "*.inf"
+        if ($infFiles.Count -eq 0) {
+            Write-Log "  Skipping: $category (no .inf files)" "WARN"
+            continue
+        }
+        
+        $powershell = [powershell]::Create().AddScript({
+            param($MountPath, $Category, $CategoryPath)
+            
+            $result = dism /Image:$MountPath /Add-Driver /Driver:$CategoryPath /Recurse /ForceUnsigned 2>&1 | Out-String
+            if ($result -match "driver\(s\) installed") {
+                @{ Category = $Category; Status = "Success"; Result = $result }
+            } else {
+                @{ Category = $Category; Status = "Warning"; Result = $result }
+            }
+        }).AddParameter("MountPath", $MountPath).AddParameter("Category", $category).AddParameter("CategoryPath", $categoryPath)
+        
+        $powershell.RunspacePool = $runspacePool
+        $jobs += [PSCustomObject]@{
+            Job = $powershell
+            AsyncResult = $powershell.BeginInvoke()
+            Category = $category
+        }
+    }
+    
+    $completed = 0
+    $total = $jobs.Count
+    
+    while ($completed -lt $total) {
+        foreach ($job in $jobs) {
+            if ($job.AsyncResult.IsCompleted) {
+                $result = $job.Job.EndInvoke($job.AsyncResult)
+                $results.Add($result)
+                $job.Job.Dispose()
+                $completed++
+                
+                if ($result.Status -eq "Success") {
+                    Write-Log "  $($result.Category): OK" "SUCCESS"
+                } else {
+                    Write-Log "  $($result.Category): Completed with warnings" "WARN"
+                }
+            }
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    
+    $runspacePool.Close()
+    $runspacePool.Dispose()
+    
+    Write-Log "Parallel driver injection complete ($total categories)" "SUCCESS"
+}
+
 function Add-Drivers {
     param([string]$MountPath, [string]$DriversDir)
     Write-Log "Injecting drivers from: $DriversDir"
     
-    # Categories to inject offline.
-    # "Display adapters" (NVIDIA) and "Universal Serial Bus controllers" (Logitech)
-    # are intentionally excluded - installed post-boot via pnputil.
+    # Categories to inject offline via DISM (core hardware needed before first boot).
+    # Excluded from offline injection (require running OS for correct PnP enumeration):
+    #   - Display adapters (NVIDIA)        -> post-boot pnputil
+    #   - Universal Serial Bus controllers -> post-boot pnputil
+    #   - Extensions                       -> post-boot pnputil
+    #   - Software components              -> post-boot pnputil
+    #   - Audio Processing Objects (APOs)  -> post-boot pnputil
+    #   - Sound, video and game controllers-> post-boot pnputil
+    #   - Monitors                         -> post-boot pnputil
     $driverCategories = @(
-        "Audio Processing Objects (APOs)",
-        "Extensions",
         "IDE ATA ATAPI controllers",
-        "Monitors",
         "Network adapters",
-        "Software components",
-        "Sound, video and game controllers",
         "Storage controllers",
         "System devices"
     )
@@ -1272,13 +1331,16 @@ function Invoke-PowerCleanup {
 
 function Remove-AppxPackagesByBlacklist {
     param([string]$MountPath)
-    $blacklistPath = Join-Path $script:ProjectRoot "Config\bloatware-blacklist.json"
+    $blacklistPath = Join-Path $script:ProjectRoot "Config\debloat-list.json"
     if (-not (Test-Path $blacklistPath)) { return }
-    
+
     Write-Log "Removing blacklisted Appx packages..."
-    $blacklist = Get-Content $blacklistPath -Raw | ConvertFrom-Json
+    $debloatConfig = Get-Content $blacklistPath -Raw | ConvertFrom-Json
+    $blacklist = $debloatConfig.blacklist
+    if (-not $blacklist) { return }
+
     $provisioned = Get-AppxProvisionedPackage -Path $MountPath
-    
+
     foreach ($app in $blacklist) {
         $match = $provisioned | Where-Object { $_.DisplayName -eq $app }
         if ($match) {
@@ -1374,33 +1436,89 @@ try {
     Write-Log "GoldISO Build System - Overhaul Edition"
     Write-Log "=========================================="
     
+    # Initialize build progress tracking
+    Start-BuildProgress
+    Write-BuildProgress -Phase "Starting Build" -PhaseNumber 0 -TotalPhases 10
+    
+    # Initialize checkpoint system
+    $resuming = Initialize-Checkpoint -CheckpointPath $CheckpointPath
+    if ($resuming) {
+        Write-Log "Resuming build from checkpoint" "INFO"
+    }
+    
     # Resolve source paths early
     $sourceISO = Join-Path $script:ProjectRoot "Win11-25H2x64v2.iso"
     $answerFilePlaceholder = Join-Path $script:ProjectRoot "Config\autounattend.xml"
     if (-not (Test-Path $answerFilePlaceholder)) {
         $answerFilePlaceholder = Join-Path $script:ProjectRoot "autounattend.xml"
     }
-    # Config/ is canonical — keep root copy in sync so they never diverge
-    Copy-Item -Path $answerFilePlaceholder -Destination (Join-Path $script:ProjectRoot "autounattend.xml") -Force
-    Write-Log "Synced Config/autounattend.xml → root" "SUCCESS"
+
+    # Modular Answer File System (V3.2)
+    if ($UseModular) {
+        if (-not $ProfilePath) {
+            $ProfilePath = Join-Path $script:ProjectRoot "Config\profile.json"
+        }
+        if (Test-Path $ProfilePath) {
+            Write-Log "Using Modular Answer File System with profile: $ProfilePath" "INFO"
+            $buildAutounattend = Join-Path $script:ProjectRoot "Scripts\Build\Build-Autounattend.ps1"
+            if (Test-Path $buildAutounattend) {
+                $generatedXml = Join-Path $WorkingDir "autounattend-generated.xml"
+                Write-Log "Generating autounattend.xml from profile..." "INFO"
+                try {
+                    & $buildAutounattend -ProfilePath $ProfilePath -OutputPath $generatedXml -DiskLayout $DiskLayout -ErrorAction Stop
+                    if (Test-Path $generatedXml) {
+                        $answerFilePlaceholder = $generatedXml
+                        Write-Log "Generated modular autounattend.xml" "SUCCESS"
+                    }
+                } catch {
+                    Write-Log "Failed to generate modular XML, falling back to legacy: $($_.Exception.Message)" "WARN"
+                    $UseModular = $false
+                }
+            } else {
+                Write-Log "Build-Autounattend.ps1 not found, falling back to legacy XML" "WARN"
+                $UseModular = $false
+            }
+        } else {
+            Write-Log "Profile not found at $ProfilePath, falling back to legacy XML" "WARN"
+            $UseModular = $false
+        }
+    }
+
+    if (-not $UseModular) {
+        # Legacy: Config/ is canonical - keep root copy in sync
+        Copy-Item -Path $answerFilePlaceholder -Destination (Join-Path $script:ProjectRoot "autounattend.xml") -Force
+        Write-Log "Synced Config/autounattend.xml -> root (legacy mode)" "SUCCESS"
+    }
 
     # Dynamic Disk Detection (Phase 3)
     $targetDiskID = Get-TargetNVMeDisk
     Write-Log "Target Disk ID: $targetDiskID"
 
-    # Check admin
-    Test-Admin
-    if (-not $SkipDependencyDownload) {
-        Invoke-Dependencies -ProjectRoot $script:ProjectRoot -SourceISOPath $sourceISO -ManifestPath (Join-Path $script:ProjectRoot "Drivers\download-manifest.json")
+    # Phase: Initialize
+    if (-not (Test-PhaseComplete "Initialize")) {
+        $phaseStart = Get-Date
+        Test-Admin
+        if (-not $SkipDependencyDownload) {
+            Invoke-Dependencies -ProjectRoot $script:ProjectRoot -SourceISOPath $sourceISO -ManifestPath (Join-Path $script:ProjectRoot "Drivers\download-manifest.json")
+        }
+        Test-Prerequisites
+        Save-Checkpoint -Phase "Initialize" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase Initialize already completed, skipping" "INFO"
     }
-    Test-Prerequisites
 
-    # Setup working directory
-    New-WorkingDirectory -Path $WorkingDir
-
-    # Create working copy of ISO
-    $workingISO = Copy-WorkingISO -SourceISO $sourceISO -WorkingDir $WorkingDir
-    $isoDrive = Mount-SourceISO -ISOPath $workingISO -MountPath $MountDir
+    # Phase: CopyISO
+    if (-not (Test-PhaseComplete "CopyISO")) {
+        $phaseStart = Get-Date
+        New-WorkingDirectory -Path $WorkingDir
+        $workingISO = Copy-WorkingISO -SourceISO $sourceISO -WorkingDir $WorkingDir
+        $isoDrive = Mount-SourceISO -ISOPath $workingISO -MountPath $MountDir
+        Save-Checkpoint -Phase "CopyISO" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase CopyISO already completed, skipping" "INFO"
+        $workingISO = Join-Path $WorkingDir "*.iso" | Get-Item | Select-Object -First 1
+        $isoDrive = Mount-SourceISO -ISOPath $workingISO -MountPath $MountDir
+    }
     $isoContentsDir = Join-Path $WorkingDir "ISO"
     Copy-ISOContents -SourceDrive $isoDrive -DestDir $isoContentsDir
     Dismount-ISO -ISOPath $workingISO
@@ -1424,24 +1542,64 @@ try {
     }
     
     $wimPath = Get-WIMSourcePath -Mode $BuildMode -StandardWIM $standardWIM -CaptureWIM $null
+    Write-BuildProgress -Phase "Mount WIM" -PhaseNumber 3 -TotalPhases 10
 
-    # Phase 1: Servicing
-    Mount-WIM -WIMPath $wimPath -MountPath $MountDir -Index $targetIndex
-    if (-not $SkipDriverInjection) { Add-Drivers -MountPath $MountDir -DriversDir (Join-Path $script:ProjectRoot "Drivers") }
-    if (-not $SkipPackageInjection) { Add-Packages -MountPath $MountDir -PackagesDir (Join-Path $script:ProjectRoot "Packages") }
+    # Phase: MountWIM and Servicing
+    if (-not (Test-PhaseComplete "MountWIM")) {
+        $phaseStart = Get-Date
+        Mount-WIM -WIMPath $wimPath -MountPath $MountDir -Index $targetIndex
+        Save-Checkpoint -Phase "MountWIM" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase MountWIM already completed, skipping" "INFO"
+    }
     
-    # Phase 4: Debloating (V3.1 Professional)
-    Invoke-OfflineDebloat -MountPath $MountDir -ConfigJson $DebloatListJson
+    # Phase: InjectDrivers
+    if (-not (Test-PhaseComplete "InjectDrivers")) {
+        $phaseStart = Get-Date
+        if (-not $SkipDriverInjection) {
+            if ($ParallelDrivers) {
+                Add-DriversParallel -MountPath $MountDir -DriversDir (Join-Path $script:ProjectRoot "Drivers")
+            } else {
+                Add-Drivers -MountPath $MountDir -DriversDir (Join-Path $script:ProjectRoot "Drivers")
+            }
+        }
+        Write-BuildProgress -Phase "Driver Injection" -PhaseNumber 4 -TotalPhases 10
+        Save-Checkpoint -Phase "InjectDrivers" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase InjectDrivers already completed, skipping" "INFO"
+    }
     
-    # Phase 5: Driver Store (V3.1 Professional)
-    Invoke-OfflineDriverStore -MountPath $MountDir -ConfigJson $DriverQueueJson
-
-    # Phase 6: Registry & Services (V3.1 Professional)
-    Invoke-OfflineRegistryHardening -MountPath $MountDir -RegistryJson $RegistryQueueJson
-    Invoke-OfflineServiceConfig -MountPath $MountDir -ServiceConfigJson $ServiceConfigJson
+    # Phase: InjectPackages
+    if (-not (Test-PhaseComplete "InjectPackages")) {
+        $phaseStart = Get-Date
+        if (-not $SkipPackageInjection) { Add-Packages -MountPath $MountDir -PackagesDir (Join-Path $script:ProjectRoot "Packages") }
+        Write-BuildProgress -Phase "Package Injection" -PhaseNumber 5 -TotalPhases 10
+        Save-Checkpoint -Phase "InjectPackages" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase InjectPackages already completed, skipping" "INFO"
+    }
     
-    # Phase 7: FSUtil Tuning (V3.1 Professional)
-    Invoke-FsutilOptimizations -MountPath $MountDir
+    # Phase: Debloating
+    if (-not (Test-PhaseComplete "Debloat")) {
+        $phaseStart = Get-Date
+        Invoke-OfflineDebloat -MountPath $MountDir -ConfigJson $DebloatListJson
+        Write-BuildProgress -Phase "Debloating" -PhaseNumber 6 -TotalPhases 10
+        Save-Checkpoint -Phase "Debloat" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase Debloat already completed, skipping" "INFO"
+    }
+    
+    # Phase: RegistryHardening
+    if (-not (Test-PhaseComplete "RegistryHardening")) {
+        $phaseStart = Get-Date
+        Invoke-OfflineDriverStore -MountPath $MountDir -ConfigJson $DriverQueueJson
+        Invoke-OfflineRegistryHardening -MountPath $MountDir -RegistryJson $RegistryQueueJson
+        Invoke-OfflineServiceConfig -MountPath $MountDir -ServiceConfigJson $ServiceConfigJson
+        Invoke-FsutilOptimizations -MountPath $MountDir
+        Save-Checkpoint -Phase "RegistryHardening" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase RegistryHardening already completed, skipping" "INFO"
+    }
 
 
     # Phase 4: Post-Install Ecosystem Injection (V3.0)
@@ -1460,19 +1618,35 @@ try {
         Copy-Item (Join-Path $assetSrc "Wallpapers\*") $wallpapersPath -Recurse -Force
     }
     
-    Optimize-Image -MountPath $MountDir
-    Dismount-WIMImage -MountPath $MountDir -Save
+    # Phase: Optimize
+    if (-not (Test-PhaseComplete "Optimize")) {
+        $phaseStart = Get-Date
+        Optimize-Image -MountPath $MountDir
+        Dismount-WIMImage -MountPath $MountDir -Save
+        Save-Checkpoint -Phase "Optimize" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase Optimize already completed, skipping" "INFO"
+    }
 
-    # Phase 2: ISO Packaging
-    $singleIndexWIM = Join-Path $WorkingDir "install-single-index.wim"
-    Export-SingleIndexWIM -SourceWIMPath $wimPath -SourceIndex 6 -DestWIMPath $singleIndexWIM -Compression Maximum
-    $finalWIM = Join-Path $isoContentsDir "sources\install.wim"
-    Export-SingleIndexWIM -SourceWIMPath $singleIndexWIM -SourceIndex 1 -DestWIMPath $finalWIM -Compression Maximum
+    # Phase: ExportWIM
+    if (-not (Test-PhaseComplete "ExportWIM")) {
+        $phaseStart = Get-Date
+        $singleIndexWIM = Join-Path $WorkingDir "install-single-index.wim"
+        Export-SingleIndexWIM -SourceWIMPath $wimPath -SourceIndex 6 -DestWIMPath $singleIndexWIM -Compression Maximum
+        $finalWIM = Join-Path $isoContentsDir "sources\install.wim"
+        Export-SingleIndexWIM -SourceWIMPath $singleIndexWIM -SourceIndex 1 -DestWIMPath $finalWIM -Compression Maximum
 
-    Copy-AnswerFile -ISODir $isoContentsDir -AnswerFile $answerFile
-    if (-not $SkipPortableApps) { Copy-PortableApps -ISODir $isoContentsDir -SourceDir (Join-Path $script:ProjectRoot "Applications\Portableapps") }
+        Copy-AnswerFile -ISODir $isoContentsDir -AnswerFile $answerFile
+        if (-not $SkipPortableApps) { Copy-PortableApps -ISODir $isoContentsDir -SourceDir (Join-Path $script:ProjectRoot "Applications\Portableapps") }
+        
+        $isoCreated = Build-ISOImage -ISODir $isoContentsDir -OutputPath $OutputISO
+        Save-Checkpoint -Phase "ExportWIM" -Duration ((Get-Date) - $phaseStart)
+    } else {
+        Write-Log "Phase ExportWIM already completed, skipping" "INFO"
+        $isoCreated = $true
+    }
     
-    $isoCreated = Build-ISOImage -ISODir $isoContentsDir -OutputPath $OutputISO
+    Write-BuildProgress -Phase "BuildISO" -PhaseNumber 10 -TotalPhases 10
 
     # Phase 2: Ventoy Plugin Support (V3.0)
     if ($SyncVentoy) {

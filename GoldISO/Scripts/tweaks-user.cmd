@@ -9,13 +9,8 @@ echo ============================================
 :: ------------------------------------------------
 :: GAME MODE
 :: ------------------------------------------------
-echo Ensuring Game Mode is enabled
-reg add "HKCU\Software\Microsoft\GameBar" /v AllowAutoGameMode /t REG_DWORD /d 1 /f
-reg add "HKCU\Software\Microsoft\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f
-
-echo Disabling Game Bar overlay only
-reg add "HKCU\Software\Microsoft\GameBar" /v ShowStartupPanel /t REG_DWORD /d 0 /f
-reg add "HKCU\Software\Microsoft\GameBar" /v UseNexusForGameBarEnabled /t REG_DWORD /d 0 /f
+:: NOTE: Game Mode and Game Bar settings are now configured via Group Policy (User-Policy.txt)
+:: See: Config\GPO\User-Policy.txt
 
 :: ------------------------------------------------
 :: INPUT LATENCY TWEAKS
@@ -45,33 +40,24 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\HidUsb" /v IdleTimeout /t REG_DW
 :: ------------------------------------------------
 :: EXPLORER + UI TWEAKS (HKCU)
 :: ------------------------------------------------
-echo Showing file extensions and hidden files
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t REG_DWORD /d 0 /f
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t REG_DWORD /d 1 /f
-
-echo Disabling recent files in Quick Access
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" /v ShowRecent /t REG_DWORD /d 0 /f
-
-echo Speeding up menu animations
-reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d 0 /f
-
-echo Disabling transparency effects
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f
-
-echo Disabling background apps
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v GlobalUserDisabled /t REG_DWORD /d 1 /f
-
-echo Disabling Snap Assist
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v SnapAssist /t REG_DWORD /d 0 /f
-
-echo Disabling Aero Peek
-reg add "HKCU\Control Panel\Desktop" /v DisableAeroPeek /t REG_DWORD /d 1 /f
+:: NOTE: The following Explorer and UI settings are now configured via Group Policy (User-Policy.txt):
+:: - HideFileExt (Show file extensions)
+:: - Hidden (Show hidden files)
+:: - ShowRecent (Recent files in Quick Access)
+:: - MenuShowDelay (Menu animation speed)
+:: - EnableTransparency (Transparency effects)
+:: - GlobalUserDisabled (Background apps)
+:: - SnapAssist (Snap Assist)
+:: - DisableAeroPeek (Aero Peek)
+:: See: Config\GPO\User-Policy.txt
 
 :: ------------------------------------------------
 :: PRIVACY TWEAKS (HKCU)
 :: ------------------------------------------------
-echo Disabling advertising ID
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" /v Enabled /t REG_DWORD /d 0 /f
+:: NOTE: Privacy settings are now configured via Group Policy (User-Policy.txt):
+:: - AdvertisingInfo\Enabled (Advertising ID)
+:: - ContentDeliveryManager settings (Suggestions, tips)
+:: See: Config\GPO\User-Policy.txt
 
 :: ------------------------------------------------
 :: USER TEMP to R:\Temp (if RAM disk exists)

@@ -1,4 +1,9 @@
 #Requires -Version 5.1
+#Requires -RunAsAdministrator
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
 <#
 .SYNOPSIS
     Export system and application settings for GoldISO migration.
@@ -31,6 +36,7 @@
 .EXAMPLE
     .\Export-Settings.ps1 -ExcludeApps @("Chrome", "Firefox")
 #>
+
 [CmdletBinding()]
 param(
     [string]$ExportPath = (Resolve-Path (Join-Path $PSScriptRoot "..\Config\SettingsMigration") -ErrorAction SilentlyContinue),
@@ -51,6 +57,9 @@ $script:ExportedItems = [System.Collections.Generic.List[PSCustomObject]]::new()
 $script:Warnings = [System.Collections.Generic.List[string]]::new()
 $script:Errors = [System.Collections.Generic.List[string]]::new()
 
+# Configuration constants
+$script:JsonDepth = 5  # Depth for ConvertTo-Json serialization
+
 # Create export directory with timestamp
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $script:ExportDir = Join-Path $ExportPath "Settings-Migration-$timestamp"
@@ -61,19 +70,20 @@ if (-not (Test-Path $script:ExportDir)) {
     New-Item -ItemType Directory -Path $script:ExportDir -Force | Out-Null
 }
 
-# Initialize log
-"Settings Export Started: $(Get-Date)" | Set-Content $script:LogFile
+# Initialize centralized logging
+Initialize-Logging -LogPath $script:LogFile
+Write-Log "Settings Export Started: $(Get-Date)"
 
-function Write-Log {
+# Wrapper to track warnings/errors for summary
+function Write-ExportLog {
     param([string]$Message, [ValidateSet("INFO","WARN","ERROR","SUCCESS")][string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp] [$Level] $Message"
-    Write-Host $entry -ForegroundColor $(switch($Level){ "ERROR"{"Red"} "WARN"{"Yellow"} "SUCCESS"{"Green"} default{"White"}})
-    Add-Content -Path $script:LogFile -Value $entry
-    
+    Write-GoldISOLog -Message $Message -Level $Level
     if ($Level -eq "WARN") { $script:Warnings.Add($Message) }
     if ($Level -eq "ERROR") { $script:Errors.Add($Message) }
 }
+
+# Alias for backward compatibility within this script
+Set-Alias -Name Write-Log -Value Write-ExportLog -Scope Script
 
 Write-Log "Export directory: $script:ExportDir"
 Write-Log "User data export: $ExportUserData (max: ${MaxUserDataSizeGB}GB)"
@@ -512,7 +522,7 @@ function Export-UserData {
             try {
                 robocopy $sourcePath $destPath /E /R:1 /W:1 /MT:8 /NFL /NDL /NJH /NJS 2>&1 | Out-Null
                 if ($LASTEXITCODE -ge 8) {
-                    Write-Log "Robocopy failed with exit code $LASTEXITCODE for $folderName" "WARN"
+                    throw "Robocopy failed with exit code $LASTEXITCODE"
                 }
                 
                 $totalSize += $size
@@ -557,7 +567,7 @@ function Export-HardwareSettings {
             Timestamp = Get-Date -Format "o"
         }
         
-        $displaySettings | ConvertTo-Json -Depth 5 | 
+        $displaySettings | ConvertTo-Json -Depth $script:JsonDepth | 
             Set-Content (Join-Path $hardwareDir "display-settings.json")
         
         $script:ExportedItems.Add([PSCustomObject]@{

@@ -1,0 +1,68 @@
+{
+  "name": "SingleDisk-Generic",
+  "description": "Generic single-disk layout for standard installations",
+  "version": "1.0",
+  "author": "GoldISO Build System",
+  "diskCount": 1,
+  "variables": {
+    "DISK_ID": {
+      "default": "0",
+      "description": "Disk ID to use for installation",
+      "type": "integer"
+    },
+    "EFI_SIZE": {
+      "default": "100",
+      "description": "EFI System Partition size in MB",
+      "type": "integer"
+    },
+    "MSR_SIZE": {
+      "default": "16",
+      "description": "Microsoft Reserved Partition size in MB",
+      "type": "integer"
+    }
+  },
+  "disks": [
+    {
+      "id": "{{DISK_ID}}",
+      "type": "Primary",
+      "installDisk": true,
+      "partitions": [
+        {
+          "order": 1,
+          "type": "EFI",
+          "size": "{{EFI_SIZE}}",
+          "format": "FAT32",
+          "label": "System"
+        },
+        {
+          "order": 2,
+          "type": "MSR",
+          "size": "{{MSR_SIZE}}"
+        },
+        {
+          "order": 3,
+          "type": "Primary",
+          "extend": true,
+          "format": "NTFS",
+          "label": "Windows",
+          "letter": "C",
+          "installTo": true
+        }
+      ]
+    }
+  ],
+  "recommendedFor": [
+    "Single SSD/NVMe installations",
+    "Virtual machines",
+    "Testing environments",
+    "Generic deployments",
+    "Laptops with single drive",
+    "Budget builds"
+  ],
+  "notes": [
+    "The Windows partition extends to fill all remaining disk space",
+    "No separate data partitions are created",
+    "Simplest and most reliable layout for standard use",
+    "Compatible with all Windows editions"
+  ]
+}

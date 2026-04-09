@@ -1,16 +1,20 @@
 #Requires -Version 5.1
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
 <#
 .SYNOPSIS
     Build GoldISO with embedded settings migration package.
 
 .DESCRIPTION
     Orchestrates the complete workflow:
-    1. Exports current system/application settings
-    2. Validates the export package
-    3. Embeds package into GoldISO Config/SettingsMigration/
-    4. Updates autounattend.xml with FirstLogonCommands
-    5. Triggers standard ISO build (via GWIG pipeline)
-    6. Verifies final ISO
+    - Settings Export: Exports current system/application settings
+    - Package Validation: Validates the export package
+    - Settings Migration Prep: Embeds package into GoldISO Config/SettingsMigration/
+    - Autounattend Update: Updates autounattend.xml with FirstLogonCommands
+    - ISO Build: Triggers standard ISO build (via GWIG pipeline)
+    - Verification: Verifies final ISO
 
 .PARAMETER SkipExport
     Skip the export phase and use existing settings package.
@@ -56,20 +60,15 @@ param(
 # Configuration & Setup
 $ErrorActionPreference = "Stop"
 $script:StartTime = Get-Date
-$script:LogFile = Join-Path $PSScriptRoot "Build-ISO-With-Settings.log"
-
-function Write-Log {
-    param([string]$Message, [ValidateSet("INFO","WARN","ERROR","SUCCESS")][string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp] [$Level] $Message"
-    Write-Host $entry -ForegroundColor $(switch($Level){ "ERROR"{"Red"} "WARN"{"Yellow"} "SUCCESS"{"Green"} default{"White"}})
-    Add-Content -Path $script:LogFile -Value $entry -ErrorAction SilentlyContinue
-}
 
 $script:ProjectRoot = Split-Path $PSScriptRoot -Parent
-Write-Log "═══════════════════════════════════════════════════════════════"
-Write-Log "Build ISO with Settings Migration"
-Write-Log "═══════════════════════════════════════════════════════════════"
+
+# Initialize centralized logging
+$logFile = Join-Path $PSScriptRoot "Build-ISO-With-Settings.log"
+Initialize-Logging -LogPath $logFile
+Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+Write-Log "Build ISO with Settings Migration" "INFO"
+Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
 Write-Log "Project Root: $script:ProjectRoot"
 Write-Log "Export Path: $ExportPath"
 Write-Log "Skip Export: $SkipExport"
@@ -77,14 +76,14 @@ Write-Log "Skip ISO Build: $SkipISOBUILD"
 
 function Invoke-SettingsExport {
     if ($SkipExport) {
-        Write-Log "Phase 1: EXPORT SKIPPED (using existing package)"
+        Write-Log "Settings Export: SKIPPED (using existing package)" "SKIP"
         return $true
     }
-    
+
     Write-Log ""
-    Write-Log "═══════════════════════════════════════════════════════════════"
-    Write-Log "Phase 1: Exporting System Settings"
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+    Write-Log "Settings Export: Exporting System Settings" "INFO"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
     
     $exportScript = Join-Path $PSScriptRoot "Export-Settings.ps1"
     if (-not (Test-Path $exportScript)) {
@@ -119,9 +118,9 @@ function Invoke-SettingsExport {
 
 function Test-ExportPackage {
     Write-Log ""
-    Write-Log "═══════════════════════════════════════════════════════════════"
-    Write-Log "Phase 2: Validating Export Package"
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+    Write-Log "Package Validation: Validating Export Package" "INFO"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
     
     $exportDirs = Get-ChildItem $ExportPath -Directory -Filter "Settings-Migration-*" | 
         Sort-Object CreationTime -Descending
@@ -178,9 +177,9 @@ function Test-ExportPackage {
 
 function Initialize-SettingsMigrationDirectory {
     Write-Log ""
-    Write-Log "═══════════════════════════════════════════════════════════════"
-    Write-Log "Phase 3: Preparing SettingsMigration Directory"
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+    Write-Log "Settings Migration Prep: Preparing SettingsMigration Directory" "INFO"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
     
     $settingsMigrationDir = Join-Path $script:ProjectRoot "Config\SettingsMigration"
     
@@ -215,9 +214,9 @@ function Initialize-SettingsMigrationDirectory {
 
 function Update-AutounattendXML {
     Write-Log ""
-    Write-Log "═══════════════════════════════════════════════════════════════"
-    Write-Log "Phase 4: Updating autounattend.xml"
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+    Write-Log "Autounattend Update: Updating autounattend.xml" "INFO"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
     
     $autounattendPath = Join-Path $script:ProjectRoot "Config\autounattend.xml"
     
@@ -305,16 +304,16 @@ function Update-AutounattendXML {
 function Invoke-ISOBUILD {
     if ($SkipISOBUILD) {
         Write-Log ""
-        Write-Log "═══════════════════════════════════════════════════════════════"
-        Write-Log "Phase 5: ISO BUILD SKIPPED"
-        Write-Log "═══════════════════════════════════════════════════════════════"
+        Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+        Write-Log "ISO Build: SKIPPED" "SKIP"
+        Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
         return $true
     }
-    
+
     Write-Log ""
-    Write-Log "═══════════════════════════════════════════════════════════════"
-    Write-Log "Phase 5: Building ISO"
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+    Write-Log "ISO Build: Building ISO" "INFO"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
     
     if (Test-Path $GWIGPipeline) {
         Write-Log "Found GWIG pipeline: $GWIGPipeline"
@@ -352,9 +351,9 @@ function Invoke-ISOBUILD {
 
 function Show-Summary {
     Write-Log ""
-    Write-Log "═══════════════════════════════════════════════════════════════"
-    Write-Log "Build Summary"
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
+    Write-Log "Build Summary" "INFO"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
     
     $duration = (Get-Date) - $script:StartTime
     Write-Log "Total Duration: $([math]::Round($duration.TotalMinutes, 2)) minutes"
@@ -368,7 +367,7 @@ function Show-Summary {
     Write-Log "SettingsMigration Directory: $script:ProjectRoot\Config\SettingsMigration"
     Write-Log "autounattend.xml: Updated with FirstLogonCommands"
     
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
     Write-Log "Next Steps:" "INFO"
     if ($SkipISOBUILD) {
         Write-Log "  1. Review the SettingsMigration directory"
@@ -378,7 +377,7 @@ function Show-Summary {
         Write-Log "  2. Test in a VM before bare-metal installation"
     }
     Write-Log "  3. During installation, settings will auto-restore after FirstLogon"
-    Write-Log "═══════════════════════════════════════════════════════════════"
+    Write-Log "═══════════════════════════════════════════════════════════════" "INFO"
 }
 
 Write-Log "Build started at: $(Get-Date)"

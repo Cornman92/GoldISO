@@ -301,8 +301,8 @@
         </RunSynchronousCommand>
         <RunSynchronousCommand wcm:action="add">
           <Order>38</Order>
-          <Description>Inject Intel System, ASUS, Network, Storage, and IDE/ATA Drivers (Offline)</Description>
-          <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Drivers\System devices\"){ $usbDrive=$d; break }}; if($usbDrive){ $drivers = @('System devices','Network adapters','Storage controllers','IDE ATA ATAPI controllers','Extensions','Software components','Audio Processing Objects (APOs)','Sound, video and game controllers','Monitors'); foreach($cat in $drivers){ $src = Join-Path \"$usbDrive`:\Drivers\" $cat; if(Test-Path $src){ dism /Image:C:\ /Add-Driver /Driver:\"$src\" /Recurse /ForceUnsigned } } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\driver-injection.log" 2&gt;&amp;1</Path>
+          <Description>Inject Core Drivers Offline (System, Network, Storage, IDE/ATA only)</Description>
+          <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Drivers\System devices\"){ $usbDrive=$d; break }}; if($usbDrive){ $drivers = @('System devices','Network adapters','Storage controllers','IDE ATA ATAPI controllers'); foreach($cat in $drivers){ $src = Join-Path \"$usbDrive`:\Drivers\" $cat; if(Test-Path $src){ dism /Image:C:\ /Add-Driver /Driver:\"$src\" /Recurse /ForceUnsigned } } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\driver-injection-offline.log" 2&gt;&amp;1</Path>
         </RunSynchronousCommand>
         <RunSynchronousCommand wcm:action="add">
           <Order>39</Order>
@@ -623,6 +623,33 @@
           <Order>47</Order>
           <Description>Restore user settings and application configurations from migration package</Description>
           <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\SettingsMigration\restore-settings.ps1"</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <!-- GamerOS-3Disk: Protect drive letters then create D: and E: folder structure -->
+        <SynchronousCommand>
+          <Order>48</Order>
+          <Description>Protect Reserved Drive Letters from Removable Media (D, E, R, etc.)</Description>
+          <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\ProgramData\Winhance\Unattend\Scripts\ProtectLetters.ps1" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\protect-letters.log" 2&gt;&amp;1</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand>
+          <Order>49</Order>
+          <Description>Create GamerOS Folders on D: (P-Apps, Scratch)</Description>
+          <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "foreach($f in @('P-Apps','Scratch')){ $p = Join-Path 'D:\' $f; if(-not(Test-Path $p)){ New-Item -ItemType Directory -Path $p -Force | Out-Null } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\folder-creation.log" 2&gt;&amp;1</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand>
+          <Order>50</Order>
+          <Description>Create GamerOS Folders on E: (Media, Backups)</Description>
+          <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "foreach($f in @('Media','Backups')){ $p = Join-Path 'E:\' $f; if(-not(Test-Path $p)){ New-Item -ItemType Directory -Path $p -Force | Out-Null } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\folder-creation.log" 2&gt;&amp;1</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <!-- Post-boot driver injection: Extensions, Software Components, Audio, Monitors -->
+        <!-- These categories require a running OS for correct enumeration -->
+        <SynchronousCommand>
+          <Order>51</Order>
+          <Description>Install Post-Boot Drivers via pnputil (Extensions, Software Components, Audio APOs, Sound, Monitors)</Description>
+          <CommandLine>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Drivers\Extensions\"){ $usbDrive=$d; break }}; if($usbDrive){ $cats = @('Extensions','Software components','Audio Processing Objects (APOs)','Sound, video and game controllers','Monitors'); foreach($cat in $cats){ $src = Join-Path \"$usbDrive`:\Drivers\" $cat; if(Test-Path $src){ pnputil /add-driver \"$src\*.inf\" /subdirs /install } } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\driver-injection-postboot.log" 2&gt;&amp;1</CommandLine>
           <RequiresUserInput>false</RequiresUserInput>
         </SynchronousCommand>
       </FirstLogonCommands>
@@ -4192,10 +4219,10 @@ try {
 }
 
 # ============================================================================
-# PHASE 1: WINGET PACKAGES - Gaming Launchers
+# WINGET PACKAGES - Gaming Launchers
 # ============================================================================
 
-Write-Log '=== PHASE 1: Gaming Launchers ===' 'INFO'
+Write-Log '=== Gaming Launchers ===' 'INFO'
 
 if ($wingetAvailable) {
     Install-WingetPackage -PackageId 'Blizzard.BattleNet' -DisplayName 'Battle.net'
@@ -4208,10 +4235,10 @@ if ($wingetAvailable) {
 }
 
 # ============================================================================
-# PHASE 2: WINGET PACKAGES - AI/Dev Tools
+# WINGET PACKAGES - AI/Dev Tools
 # ============================================================================
 
-Write-Log '=== PHASE 2: AI/Dev Tools ===' 'INFO'
+Write-Log '=== AI/Dev Tools ===' 'INFO'
 
 if ($wingetAvailable) {
     Install-WingetPackage -PackageId 'Anthropic.Claude' -DisplayName 'Claude'
@@ -4225,10 +4252,10 @@ if ($wingetAvailable) {
 }
 
 # ============================================================================
-# PHASE 3: WINGET PACKAGES - Utilities
+# WINGET PACKAGES - Utilities
 # ============================================================================
 
-Write-Log '=== PHASE 3: Utilities ===' 'INFO'
+Write-Log '=== Utilities ===' 'INFO'
 
 if ($wingetAvailable) {
     Install-WingetPackage -PackageId 'FxSound.FxSound' -DisplayName 'FxSound'
@@ -4260,10 +4287,10 @@ if ($wingetAvailable) {
 }
 
 # ============================================================================
-# PHASE 4: CHOCOLATEY PACKAGES (if winget failed or for npm-based tools)
+# CHOCOLATEY PACKAGES (if winget failed or for npm-based tools)
 # ============================================================================
 
-Write-Log '=== PHASE 4: Chocolatey Fallbacks ===' 'INFO'
+Write-Log '=== Chocolatey Fallbacks ===' 'INFO'
 
 if ($chocoAvailable) {
     # Install nodejs if winget failed
@@ -4288,10 +4315,10 @@ if ($chocoAvailable) {
 }
 
 # ============================================================================
-# PHASE 5: USB INSTALLERS
+# USB INSTALLERS
 # ============================================================================
 
-Write-Log '=== PHASE 5: USB Installers ===' 'INFO'
+Write-Log '=== USB Installers ===' 'INFO'
 
 # StartAllBack
 Install-USBApp -InstallerName 'StartAllBack_3.9.22_setup.exe' -DisplayName 'StartAllBack' -Arguments @('/VERYSILENT', '/NORESTART')
@@ -4330,10 +4357,10 @@ Install-USBApp -InstallerName 'windowsmanager.exe' -DisplayName 'Windows Manager
 Install-USBApp -InstallerName 'winscript-installer.exe' -DisplayName 'WinScript' -Arguments @('/S')
 
 # ============================================================================
-# PHASE 6: PORTABLE APPS
+# PORTABLE APPS
 # ============================================================================
 
-Write-Log '=== PHASE 6: Portable Apps ===' 'INFO'
+Write-Log '=== Portable Apps ===' 'INFO'
 
 Copy-PortableApp -SourceName 'FanControl' -TargetName 'FanControl'
 Copy-PortableApp -SourceName 'nvidiaProfileInspector' -TargetName 'nvidiaProfileInspector'
@@ -4352,10 +4379,10 @@ if ($sparkleSource) {
 }
 
 # ============================================================================
-# PHASE 7: DOWNLOADS FROM GITHUB
+# DOWNLOADS FROM GITHUB
 # ============================================================================
 
-Write-Log '=== PHASE 7: GitHub Downloads ===' 'INFO'
+Write-Log '=== GitHub Downloads ===' 'INFO'
 
 # UniGetUI
 Write-Log 'Installing UniGetUI...' 'INFO'
@@ -4396,10 +4423,10 @@ try {
 }
 
 # ============================================================================
-# PHASE 8: SPECIAL ITEMS
+# SPECIAL ITEMS
 # ============================================================================
 
-Write-Log '=== PHASE 8: Special Items ===' 'INFO'
+Write-Log '=== Special Items ===' 'INFO'
 
 # mpam-fe.exe - Offline Defender definitions
 $mpamPath = Join-Path $InstallersPath 'mpam-fe.exe'

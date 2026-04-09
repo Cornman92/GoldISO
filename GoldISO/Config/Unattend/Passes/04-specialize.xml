@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pass: specialize
+  Purpose: Device-specific configuration during Windows setup
+  
+  This pass runs during the specialize phase (before OOBE). Use for:
+  - Installing Windows features
+  - Configuring security settings
+  - Injecting drivers and packages
+  - Running system-level tweaks
+-->
+<settings pass="specialize" xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+  <component name="Microsoft-Windows-PnpCustomizationsNonWinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+  </component>
+  
+  <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+    <RunSynchronous>
+      <!-- Core Infrastructure -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>1</Order>
+        <Description>Loads Scripts in this XML File</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -Command "$xml = [xml]::new(); $xml.Load('C:\Windows\Panther\unattend.xml'); $sb = [scriptblock]::Create($xml.unattend.Extensions.ExtractScript); Invoke-Command -ScriptBlock $sb -ArgumentList $xml;"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>2</Order>
+        <Description>Registry Entry to Create a Local Account during OOBE</Description>
+        <Path>reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE" /v BypassNRO /t REG_DWORD /d 1 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>3</Order>
+        <Description>Disable All Network Adapters Temporarily for Local Account Creation</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Get-NetAdapter | Disable-NetAdapter -Confirm:$false"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>4</Order>
+        <Description>Create Network Recovery Scheduled Task (fallback)</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -Command \"Get-NetAdapter | Enable-NetAdapter -Confirm:$false\"'; $trigger = New-ScheduledTaskTrigger -AtLogOn; $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -RunLevel Highest; $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -DeleteExpiredTaskAfter (New-TimeSpan -Minutes 5); Register-ScheduledTask -TaskName 'NetworkRecovery' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>5</Order>
+        <Description>Set PowerShell Execution Policy to Unrestricted (global)</Description>
+        <Path>reg add "HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" /v ExecutionPolicy /t REG_SZ /d Unrestricted /f</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Windows Features -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>6</Order>
+        <Description>Enables .NET Framework 3.5 from Windows Installation Media</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -Command "foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){$src=Join-Path ($d+':') 'sources\sxs';if(Test-Path $src\*.cab){dism /Online /Enable-Feature /FeatureName:NetFx3 /All /LimitAccess /Source:$src;break}}"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>7</Order>
+        <Description>Enable Windows Subsystem for Linux</Description>
+        <Path>dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>8</Order>
+        <Description>Enable Hyper-V</Description>
+        <Path>dism /online /enable-feature /featurename:Microsoft-Hyper-V-All /all /norestart</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>9</Order>
+        <Description>Run Winhance Script System Wide Operations</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File ".\Scripts\Winhancements.ps1"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>10</Order>
+        <Description>Disable Internet Explorer</Description>
+        <Path>dism.exe /online /disable-feature /featurename:Internet-Explorer-Optional-amd64 /norestart</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Security Settings -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>11</Order>
+        <Description>Set Telemetry to Security</Description>
+        <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>12</Order>
+        <Description>Disable Cortana</Description>
+        <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v AllowCortana /t REG_DWORD /d 0 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>13</Order>
+        <Description>Disable SMBv1</Description>
+        <Path>Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>14</Order>
+        <Description>Enable Windows Firewall</Description>
+        <Path>netsh advfirewall set allprofiles state on</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>15</Order>
+        <Description>Configure Windows Defender</Description>
+        <Path>Set-MpPreference -DisableRealtimeMonitoring $false -EnableControlledFolderAccess Enabled -MAPSReporting Advanced</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>16</Order>
+        <Description>Set Account Policies</Description>
+        <Path>net accounts /minpwlen:8 /maxpwage:42 /minpwage:1 /uniquepw:5</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>17</Order>
+        <Description>Enable Windows Sandbox</Description>
+        <Path>dism /online /enable-feature /featurename:Containers-DisposableClientVM /all /norestart</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>18</Order>
+        <Description>Enable Legacy Components (DirectPlay)</Description>
+        <Path>dism /online /enable-feature /featurename:LegacyComponents /all /norestart</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>19</Order>
+        <Description>Disable Bitlocker</Description>
+        <Path>manage-bde -off</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>20</Order>
+        <Description>Enable SMB v3</Description>
+        <Path>Set-SmbServerConfiguration -EnableSMB2Protocol $true -Force</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Identity and Authentication -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>21</Order>
+        <Description>Remove Windows Hello for Business</Description>
+        <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Microsoft Passport for Work" /v EnableHello /t REG_DWORD /d 0 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>22</Order>
+        <Description>Enable Virtualization-Based Security</Description>
+        <Path>reg add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" /v Enabled /t REG_DWORD /d 1 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>23</Order>
+        <Description>Configure Control Flow Guard</Description>
+        <Path>reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v EnableCFG /t REG_DWORD /d 1 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>24</Order>
+        <Description>Disable LM and NTLM Authentication</Description>
+        <Path>reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v lmcompatibilitylevel /t REG_DWORD /d 5 /f</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Network Optimization -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>25</Order>
+        <Description>Enable IPv6</Description>
+        <Path>reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" /v DisabledComponents /t REG_DWORD /d 0 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>26</Order>
+        <Description>Configure DNS Suffix</Description>
+        <Path>wmic nicconfig where "IPEnabled=True" call SetDNSSuffixSearchOrder "example.com"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>27</Order>
+        <Description>Configure WINS Server Settings</Description>
+        <Path>wmic nicconfig where "IPEnabled=True" set WINSEnableLMHostsLookup=TRUE</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Gaming Optimizations -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>28</Order>
+        <Description>Disable Xbox Game DVR</Description>
+        <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v AllowGameDVR /t REG_DWORD /d 0 /f</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>29</Order>
+        <Description>Disable Nagle's Algorithm for Gaming Latency</Description>
+        <Path>powershell.exe -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $tcpParams = [System.Net.Dns]::GetHostAddresses($_.InterfaceAlias); $regPath = \"HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\$($_.InterfaceGuid)\"; if (Test-Path $regPath) { New-ItemProperty -Path $regPath -Name TcpAckFrequency -PropertyType DWord -Value 1 -Force | Out-Null; New-ItemProperty -Path $regPath -Name TcpNoDelay -PropertyType DWord -Value 1 -Force | Out-Null } }"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>30</Order>
+        <Description>Optimize NetBIOS over TCP/IP for Gaming</Description>
+        <Path>powershell.exe -NoProfile -Command "Get-WmiObject Win32_NetworkAdapterConfiguration | Where-Object {$_.IPEnabled} | ForEach-Object { $_.SetTcpipNetbios(2) }"</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Service Management -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>31</Order>
+        <Description>Disable MapsBroker Service</Description>
+        <Path>sc stop MapsBroker &amp;&amp; sc config MapsBroker start= disabled</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>32</Order>
+        <Description>Disable RemoteRegistry Service</Description>
+        <Path>sc stop RemoteRegistry &amp;&amp; sc config RemoteRegistry start= disabled</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>33</Order>
+        <Description>Disable TabletInputService</Description>
+        <Path>sc stop TabletInputService &amp;&amp; sc config TabletInputService start= disabled</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>34</Order>
+        <Description>Disable SysMain (Superfetch)</Description>
+        <Path>sc stop SysMain &amp;&amp; sc config SysMain start= disabled</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>35</Order>
+        <Description>Disable Print Spooler</Description>
+        <Path>sc stop Spooler &amp;&amp; sc config Spooler start= disabled</Path>
+      </RunSynchronousCommand>
+      
+      <!-- System Tweaks -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>36</Order>
+        <Description>Configure Network Adapter Priority Metric</Description>
+        <Path>powershell.exe -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $idx = $_.ifIndex; $ipConfig = Get-WmiObject Win32_NetworkAdapterConfiguration -Filter \"Index=$idx\"; if ($ipConfig) { $ipConfig.SetIPConnectionMetric(1) | Out-Null } }"</Path>
+      </RunSynchronousCommand>
+      <RunSynchronousCommand wcm:action="add">
+        <Order>37</Order>
+        <Description>Run System-Level Tweaks</Description>
+        <Path>cmd.exe /c "C:\ProgramData\Winhance\Unattend\Scripts\tweaks-system.cmd" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\tweaks-system.log" 2&gt;&amp;1</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Driver Injection (Conditional on USB) -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>38</Order>
+        <Description>Inject Intel System, ASUS, Network, Storage, and IDE/ATA Drivers</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Drivers\System devices\"){ $usbDrive=$d; break }}; if($usbDrive){ $drivers = @('System devices','Network adapters','Storage controllers','IDE ATA ATAPI controllers','Extensions','Software components','Audio Processing Objects (APOs)','Sound, video and game controllers','Monitors'); foreach($cat in $drivers){ $src = Join-Path \"$usbDrive`:\Drivers\" $cat; if(Test-Path $src){ dism /Image:C:\ /Add-Driver /Driver:\"$src\" /Recurse /ForceUnsigned } } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\driver-injection.log" 2&gt;&amp;1</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Package Injection -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>39</Order>
+        <Description>Inject MSIX/APPX Packages (PowerShell 7, Terminal, AppInstaller, Runtime)</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle\"){ $usbDrive=$d; break }}; if($usbDrive){ $pkgDir = Join-Path \"$usbDrive`:\Packages\"; $msix = @('Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle','Microsoft.WindowsTerminal_1.24.10621.0_8wekyb3d8bbwe.msixbundle','PowerShell-7.6.0.msixbundle'); $appx = @('Microsoft.WindowsAppRuntime.1.8_8000.616.304.0_x64.appx','Microsoft.UI.Xaml.2.8_8.2501.31001.0_x64.appx'); foreach($pkg in $msix){ $p = Join-Path $pkgDir $pkg; if(Test-Path $p){ dism /Image:C:\ /Add-ProvisionedAppxPackage /PackagePath:\"$p\" /SkipLicense } }; foreach($pkg in $appx){ $p = Join-Path $pkgDir $pkg; if(Test-Path $p){ dism /Image:C:\ /Add-ProvisionedAppxPackage /PackagePath:\"$p\" /SkipLicense } } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\package-injection.log" 2&gt;&amp;1</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Windows Updates -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>40</Order>
+        <Description>Inject Windows Updates (.msu/.cab)</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$usbDrive = $null; foreach($d in 'C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'){if(Test-Path \"$d`:\Packages\windows11.0-kb5068516-x64_52337d6ab0d11b474dfafe1b14155d4a63ac2a8a.cab\"){ $usbDrive=$d; break }}; if($usbDrive){ $pkgDir = Join-Path \"$usbDrive`:\Packages\"; $updates = @('windows11.0-kb5067931-x64-ndp481_495c5436de8d0ceb6b7a1982988f61ce0be71f38.msu','windows11.0-kb5068516-x64_52337d6ab0d11b474dfafe1b14155d4a63ac2a8a.cab','windows11.0-kb5043080-x64_953449672073f8fb99badb4cc6d5d7849b9c83e8.msu','windows11.0-kb5085516-x64_52aef89bc1afc5e67eec927556ec6926122936ad.msu','windows11.0-kb5074828-x64-ndp481_88bbe39d8dc9e306cd2d5faa817c8656e6d798d7.msu','windows11.0-kb5079391-x64_0a0129ebe88fdd66e19ac7d40d9cddd0b18c3332.msu','windows11.0-kb5083482-x64_3fdfdf01ddc1db954190523120dd75e494404770.cab','windows11.0-kb5066128-x64-ndp481_e2239075b7e05662cbbe1b4acfe9e57e40a2b9c0.msu','updateplatform.amd64fre_a94fdbcbdd69a5cab6032175a4be11f9a52db59f.exe'); foreach($pkg in $updates){ $p = Join-Path $pkgDir $pkg; if(Test-Path $p){ try { dism /Image:C:\ /Add-Package /PackagePath:\"$p\" /NoRestart } catch { Write-Host \"Skipping $pkg\" } } } }" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\update-injection.log" 2&gt;&amp;1</Path>
+      </RunSynchronousCommand>
+      
+      <!-- Disk Configuration -->
+      <RunSynchronousCommand wcm:action="add">
+        <Order>41</Order>
+        <Description>Shrink Windows by 105 GB, Create 15 GB Recovery, Rest for OP</Description>
+        <Path>powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\ProgramData\Winhance\Unattend\Scripts\shrink-and-recovery.ps1" &gt;&gt; "C:\ProgramData\Winhance\Unattend\Logs\disk-config.log" 2&gt;&amp;1</Path>
+      </RunSynchronousCommand>
+    </RunSynchronous>
+  </component>
+</settings>

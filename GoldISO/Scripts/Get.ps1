@@ -1,3 +1,58 @@
+#Requires -Version 5.1
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
+<#
+.SYNOPSIS
+    Get GoldISO components and configuration.
+
+.DESCRIPTION
+    Retrieves various GoldISO components including drivers, packages, settings,
+    and build manifests. Can be run in CLI mode for automation.
+
+.PARAMETER CLI
+    Run in CLI mode without interactive prompts.
+
+.PARAMETER Silent
+    Suppress non-essential output.
+
+.PARAMETER Verbose
+    Enable verbose output.
+
+.PARAMETER Sysprep
+    Execute sysprep operations.
+
+.PARAMETER LogPath
+    Path to log file.
+
+.PARAMETER User
+    Target user context.
+
+.PARAMETER NoRestartExplorer
+    Do not restart Windows Explorer.
+
+.PARAMETER CreateRestorePoint
+    Create a system restore point before operations.
+
+.PARAMETER RunAppsListGenerator
+    Run the applications list generator.
+
+.PARAMETER RunDefaults
+    Run default configuration.
+
+.PARAMETER RunDefaultsLite
+    Run lite default configuration.
+
+.PARAMETER RunSavedSettings
+    Run saved settings.
+
+.EXAMPLE
+    .\Get.ps1 -CLI -RunDefaults
+
+.EXAMPLE
+    .\Get.ps1 -Sysprep -Verbose
+#>
 [CmdletBinding()]
 param (
     [Parameter()]

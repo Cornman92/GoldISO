@@ -534,8 +534,7 @@ function Update-Tool {
     }
     
     $scoopExists = Get-Command -Name 'scoop' -ErrorAction SilentlyContinue
-    $wingetExists = Get-Command -Name 'winget' -ErrorAction SilentlyContinue
-    
+
     if ($scoopExists) {
         $tool = $script:ToolRegistry[$Name]
         $updateInfo = scoop checkup $tool.Scoop 2>$null

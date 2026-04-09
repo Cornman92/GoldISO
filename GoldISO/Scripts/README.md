@@ -92,13 +92,30 @@ All scripts write to log files in:
 
 ## Shared Module
 
-The `Modules\GoldISO-Common.psm1` module provides:
+The `Modules\GoldISO-Common.psm1` module provides standardized functions used across all scripts:
 
-- Standardized logging (`Write-GoldISOLog`)
-- Admin privilege checking (`Test-GoldISOAdmin`)
-- Path validation (`Test-GoldISOPath`)
-- Size formatting (`Format-GoldISOSize`)
-- WinPE detection (`Test-GoldISOWinPE`)
+### Logging Functions
+- `Write-GoldISOLog` / `Write-Log` (alias) - Standardized logging with colors
+- `Initialize-Logging` - Initialize centralized logging
+- `Start-GoldISOTranscript` - Start transcript logging
+- `Stop-GoldISOTranscript` - Stop transcript logging
+
+### Validation Functions
+- `Test-GoldISOAdmin` - Check/Require administrator privileges
+- `Test-GoldISOPath` - Validate file/directory paths
+- `Test-GoldISOWinPE` - Detect WinPE environment
+- `Test-GoldISODiskSpace` - Validate available disk space
+- `Test-GoldISOCommand` - Verify external commands available
+- `Test-DiskTopology` - Validate disk configuration
+
+### Utility Functions
+- `Format-GoldISOSize` - Format bytes to human-readable sizes
+- `Get-GoldISORoot` - Get project root directory
+- `Invoke-GoldISOCommand` - Execute commands with timeout
+- `Get-ComponentHash` - Calculate file hashes
+- `Import-BuildManifest` / `Export-BuildManifest` - Manage build manifests
+- `Invoke-GoldISOErrorThrow` - Proper error throwing
+- `Register-GoldISOCleanup` / `Invoke-GoldISOCleanup` - Cleanup handling
 
 ## Prerequisites
 

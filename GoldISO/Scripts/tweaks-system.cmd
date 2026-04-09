@@ -41,8 +41,8 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v OverlayTestMo
 echo Enabling DX12 tearing support
 reg add "HKLM\SOFTWARE\Microsoft\DirectX" /v AllowTearing /t REG_DWORD /d 1 /f
 
-echo Disabling GameDVR
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v AllowGameDVR /t REG_DWORD /d 0 /f
+:: NOTE: GameDVR is now configured via Group Policy (Computer-Policy.txt)
+:: GPO Path: Computer Configuration\Administrative Templates\Windows Components\GameDVR\Allow Game DVR
 
 :: ------------------------------------------------
 :: CPU + SCHEDULER TWEAKS
@@ -157,23 +157,23 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked
 :: ------------------------------------------------
 :: PRIVACY TWEAKS (HKLM)
 :: ------------------------------------------------
-echo Disabling telemetry
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f
-
-echo Disabling location tracking
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors" /v DisableLocation /t REG_DWORD /d 1 /f
+:: NOTE: The following privacy settings are now configured via Group Policy (Computer-Policy.txt):
+:: - AllowTelemetry (Data Collection)
+:: - DisableLocation (Location and Sensors)
+:: - NoFeedbackHub (Windows Feedback)
+:: - DisabledByGroupPolicy (Advertising ID)
+:: - AllowInputPersonalization
+:: See: Config\GPO\Computer-Policy.txt
 
 :: ------------------------------------------------
 :: WINDOWS UPDATE TWEAKS
 :: ------------------------------------------------
-echo Disabling automatic driver updates
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v ExcludeWUDriversInQualityUpdate /t REG_DWORD /d 1 /f
-
-echo Disabling automatic restarts
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" /v NoAutoRebootWithLoggedOnUsers /t REG_DWORD /d 1 /f
-
-echo Disabling Delivery Optimization
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v DODownloadMode /t REG_DWORD /d 0 /f
+:: NOTE: The following Windows Update settings are now configured via Group Policy (Computer-Policy.txt):
+:: - ExcludeWUDriversInQualityUpdate (Driver updates)
+:: - NoAutoRebootWithLoggedOnUsers (Auto-restart)
+:: - DODownloadMode (Delivery Optimization)
+:: - SetUpdateNotificationLevel
+:: See: Config\GPO\Computer-Policy.txt
 
 :: ------------------------------------------------
 :: SCHEDULED TASK CLEANUP

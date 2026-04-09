@@ -1,5 +1,13 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+
+# Import common module (may not exist in WinPE/target environment, so wrap in try/catch)
+try {
+    Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force -ErrorAction Stop
+} catch {
+    # Module not available in target environment, define minimal local logging
+}
+
 <#
 .SYNOPSIS
     Installs SoftPerfect RAM Disk from USB drive or downloads as fallback
@@ -26,16 +34,9 @@ param(
     [int]$SizeGB = 8
 )
 
-$LogPath = 'C:\ProgramData\Winhance\Unattend\Logs\ramdisk-install.txt'
-$null = New-Item -Path (Split-Path $LogPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
-
-function Write-Log {
-    param([string]$Message, [ValidateSet("INFO","SUCCESS","WARNING","ERROR")][string]$Level = "INFO")
-    $Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $entry = "[$Timestamp] [$Level] $Message"
-    Add-Content -Path $LogPath -Value $entry -Encoding UTF8
-    Write-Host $entry -ForegroundColor $(switch($Level) { "ERROR" { "Red" } "WARNING" { "Yellow" } "SUCCESS" { "Green" } default { "White" }})
-}
+# Initialize centralized logging (auto-initialization handles fallback)
+$logFile = 'C:\ProgramData\Winhance\Unattend\Logs\ramdisk-install.txt'
+Initialize-Logging -LogPath $logFile
 
 Write-Log 'RAM Disk Installation Script Started'
 

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GamerOS 3-Disk Layout Template (CUSTOM - LOCKED)
+  
+  Configuration for a 3-disk gaming setup:
+  - Disk 0 (232GB SSD): SSD (D:), SSD-OP (overprovisioning) - folders on single partition
+  - Disk 1 (1TB HDD): HDD (E:) - folders on single partition
+  - Disk 2 (Windows NVMe): EFI + MSR + Windows (C:) + Recovery + 90GB OP
+  
+  SIZES 
+  - Disk 0: 200GB + remainder for OP
+  - Disk 1: Extended (all remaining space)
+  - Disk 2: 300MB EFI + 16MB MSR + ~826GB Windows + 15GB Recovery + 90GB OP
+  
+  Variable Substitutions:
+  - {{WINDOWS_DISK_ID}}: Disk ID for Windows (default: 2)
+  - {{SSD_DISK_ID}}: Disk ID for SSD (default: 0)
+  - {{HDD_DISK_ID}}: Disk ID for HDD (default: 1)
+  - {{WINDOWS_PARTITION_SIZE}}: Windows partition size in MB (default: 845838 = ~826GB)
+-->
+<DiskConfiguration xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+  <WillShowUI>Never</WillShowUI>
+  
+  <!-- ===================== DISK 0 (232GB SSD) ===================== -->
+  <!-- 2 partitions: Primary (remainder) + 22GB OP. Folders created via FirstLogonCommands -->
+  <Disk wcm:action="add">
+    <DiskID>{{SSD_DISK_ID}}</DiskID>
+    <WillWipeDisk>true</WillWipeDisk>
+    <CreatePartitions>
+      <!-- Primary: Remainder after OP (~210GB) -->
+      <CreatePartition wcm:action="add">
+        <Order>1</Order>
+        <Type>Primary</Type>
+        <Extend>true</Extend>
+      </CreatePartition>
+      <!-- SSD-OP: ~22GB (10% of 232GB for overprovisioning) -->
+      <CreatePartition wcm:action="add">
+        <Order>2</Order>
+        <Type>Primary</Type>
+        <Size>22528</Size>
+      </CreatePartition>
+    </CreatePartitions>
+    <ModifyPartitions>
+      <!-- Primary: (created by FirstLogonCommands) -->
+      <ModifyPartition wcm:action="add">
+        <Order>1</Order>
+        <PartitionID>1</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Apps</Label>
+        <Letter>D</Letter>
+      </ModifyPartition>
+      <!-- SSD-OP: RAW (overprovisioning) -->
+      <ModifyPartition wcm:action="add">
+        <Order>2</Order>
+        <PartitionID>2</PartitionID>
+        <Format>RAW</Format>
+        <Label>SSD-OP</Label>
+      </ModifyPartition>
+    </ModifyPartitions>
+  </Disk>
+  
+  <!-- ===================== DISK 1 (HDD - 1TB) ===================== -->
+  <!-- Media and Backups folders created via FirstLogonCommands -->
+  <Disk wcm:action="add">
+    <DiskID>{{HDD_DISK_ID}}</DiskID>
+    <WillWipeDisk>true</WillWipeDisk>
+    <CreatePartitions>
+      <CreatePartition wcm:action="add">
+        <Order>1</Order>
+        <Type>Primary</Type>
+        <Extend>true</Extend>
+      </CreatePartition>
+    </CreatePartitions>
+    <ModifyPartitions>
+      <!-- Primary: Contains Media and Backups folders (created by FirstLogonCommands) -->
+      <ModifyPartition wcm:action="add">
+        <Order>1</Order>
+        <PartitionID>1</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Storage</Label>
+        <Letter>E</Letter>
+      </ModifyPartition>
+    </ModifyPartitions>
+  </Disk>
+  
+  <!-- ===================== DISK 2 (Windows NVMe - 1TB) ===================== -->
+  <Disk wcm:action="add">
+    <DiskID>{{WINDOWS_DISK_ID}}</DiskID>
+    <WillWipeDisk>true</WillWipeDisk>
+    <CreatePartitions>
+      <!-- EFI -->
+      <CreatePartition wcm:action="add">
+        <Order>1</Order>
+        <Type>EFI</Type>
+        <Size>300</Size>
+      </CreatePartition>
+      <!-- MSR -->
+      <CreatePartition wcm:action="add">
+        <Order>2</Order>
+        <Type>MSR</Type>
+        <Size>16</Size>
+      </CreatePartition>
+      <!-- Recovery: 15GB (BEFORE Windows for boot performance) -->
+      <CreatePartition wcm:action="add">
+        <Order>3</Order>
+        <Type>Primary</Type>
+        <Size>15360</Size>
+      </CreatePartition>
+      <!-- Windows: ~826GB -->
+      <CreatePartition wcm:action="add">
+        <Order>4</Order>
+        <Type>Primary</Type>
+        <Size>{{WINDOWS_PARTITION_SIZE}}</Size>
+      </CreatePartition>
+      <!-- OP: 90GB overprovisioning -->
+      <CreatePartition wcm:action="add">
+        <Order>5</Order>
+        <Type>Primary</Type>
+        <Size>92160</Size>
+      </CreatePartition>
+    </CreatePartitions>
+    <ModifyPartitions>
+      <!-- EFI -->
+      <ModifyPartition wcm:action="add">
+        <Order>1</Order>
+        <PartitionID>1</PartitionID>
+        <Format>FAT32</Format>
+        <Label>System</Label>
+      </ModifyPartition>
+      <!-- Recovery -->
+      <ModifyPartition wcm:action="add">
+        <Order>2</Order>
+        <PartitionID>3</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Recovery</Label>
+        <TypeID>de94bba4-06d1-4d40-a16a-bfd50179d6ac</TypeID>
+      </ModifyPartition>
+      <!-- Windows -->
+      <ModifyPartition wcm:action="add">
+        <Order>3</Order>
+        <PartitionID>4</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Windows</Label>
+        <Letter>C</Letter>
+      </ModifyPartition>
+      <!-- OP: RAW (overprovisioning) -->
+      <ModifyPartition wcm:action="add">
+        <Order>4</Order>
+        <PartitionID>5</PartitionID>
+        <Format>RAW</Format>
+        <Label>OP</Label>
+      </ModifyPartition>
+    </ModifyPartitions>
+  </Disk>
+</DiskConfiguration>

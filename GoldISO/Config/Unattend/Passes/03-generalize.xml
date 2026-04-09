@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pass: generalize
+  Purpose: Sysprep generalization settings
+  
+  This pass runs during sysprep generalize phase. Use for:
+  - Removing system-specific settings
+  - Preparing image for deployment to different hardware
+-->
+<settings pass="generalize">
+  <!-- Currently no generalization configuration -->
+</settings>

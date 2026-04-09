@@ -9,8 +9,17 @@ This directory contains all configuration files for the GamerOS custom Windows 1
 | `autounattend.xml` | Primary unattended answer file (1MB+) - controls the entire Windows installation |
 | `GamerOS Windows 11.xml` | NTLite preset for component removal |
 | `winget-packages.json` | Categorized application manifest for winget installation |
-| `package.json` | Node.js dependencies (for any build tools) |
+| `build-manifest.json` | Build metadata and component versions |
+| `debloat-list.json` | AppX packages to remove during build |
+| `services-config.json` | Windows services configuration |
+| `queued-registry.json` | Registry tweaks for offline injection |
+| `driver-queue.json` | Driver management instructions |
+| `hardware-matrix.json` | Hardware compatibility mappings |
+| `download-manifest.json` | Driver download URLs and hashes |
+| `PowerShellProfile/` | Custom PowerShell profile |
 | `SettingsMigration/` | Settings export/restore configurations |
+| `DiskLayouts/` | Disk configuration templates |
+| `Unattend/` | Unattend XML variations |
 
 ## autounattend.xml
 

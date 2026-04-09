@@ -1,5 +1,9 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
 <#
 .SYNOPSIS
     Applies a captured Windows image to a disk.
@@ -27,22 +31,69 @@ param(
     [int]$TargetDisk = 2,
     [int]$ImageIndex = 1,
     [ValidateSet("UEFI", "BIOS", "Auto")][string]$BootMode = "Auto",
-    [string]$UnattendPath = "I:\GoldISO\autounattend.xml"
+    [string]$UnattendPath = "I:\GoldISO\autounattend.xml",
+
+    # Disk layout to apply — drives disk partitioning strategy.
+    # GamerOS-3Disk applies only to Disk 2 (Windows NVMe); Disks 0/1 are
+    # configured post-boot via Configure-SecondaryDrives.ps1.
+    [ValidateSet("GamerOS-3Disk", "SingleDisk-DevGaming", "SingleDisk-Generic")]
+    [string]$DiskLayout = "GamerOS-3Disk"
 )
 
 # Script Configuration
 $ErrorActionPreference = "Stop"
 $StartTime = Get-Date
 
-function Write-Log {
-    param([string]$Message, [ValidateSet("INFO","WARN","ERROR","SUCCESS")][string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $colorMap = @{ INFO = "White"; WARN = "Yellow"; ERROR = "Red"; SUCCESS = "Green" }
-    Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $colorMap[$Level]
-}
+# Initialize logging
+$logFile = Join-Path (Split-Path $PSScriptRoot -Parent) "Logs\Apply-Image-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+Initialize-Logging -LogPath $logFile
 
 function Find-ImagePath {
-    # Try to find capture.wim on portable drive (I: first)
+    # Primary: enumerate USB drives and find the largest .wim file on any of them.
+    # This handles cases where the USB drive letter is unknown.
+    Write-Log "Scanning USB drives for WIM files..."
+
+    try {
+        $usbVolumes = Get-Volume -ErrorAction SilentlyContinue |
+            Where-Object { $_.DriveType -eq 'Removable' -and $_.DriveLetter }
+
+        # Also include Fixed disks > 10 GB connected via USB bus
+        $usbFixed = Get-Disk -ErrorAction SilentlyContinue |
+            Where-Object { $_.BusType -eq 'USB' -and $_.Size -gt 10GB } |
+            ForEach-Object {
+                $diskNum = $_.Number
+                Get-Partition -DiskNumber $diskNum -ErrorAction SilentlyContinue |
+                    Where-Object { $_.DriveLetter } |
+                    ForEach-Object {
+                        Get-Volume -DriveLetter $_.DriveLetter -ErrorAction SilentlyContinue
+                    }
+            }
+
+        $allUsbVolumes = @($usbVolumes) + @($usbFixed) | Where-Object { $_ -and $_.DriveLetter }
+
+        $bestWim = $null
+        $bestSize = 0
+
+        foreach ($vol in $allUsbVolumes) {
+            $letter = $vol.DriveLetter
+            $wimFiles = Get-ChildItem -Path "$letter`:\" -Filter "*.wim" -Recurse -ErrorAction SilentlyContinue
+            foreach ($wim in $wimFiles) {
+                if ($wim.Length -gt $bestSize) {
+                    $bestSize = $wim.Length
+                    $bestWim = $wim.FullName
+                }
+            }
+        }
+
+        if ($bestWim) {
+            Write-Log "Found largest WIM on USB: $bestWim ($([math]::Round($bestSize/1MB, 0)) MB)" "SUCCESS"
+            return $bestWim
+        }
+    } catch {
+        Write-Log "USB scan error: $($_.Exception.Message)" "WARN"
+    }
+
+    # Fallback: check fixed known paths
     $searchPaths = @(
         "I:\GoldISO\Capture.wim",
         "D:\GoldISO\Capture.wim",
@@ -53,14 +104,13 @@ function Find-ImagePath {
         "J:\GoldISO\Capture.wim",
         "K:\GoldISO\Capture.wim"
     )
-    
     foreach ($path in $searchPaths) {
         if (Test-Path $path) {
             Write-Log "Found image at: $path" "SUCCESS"
             return $path
         }
     }
-    
+
     return $null
 }
 

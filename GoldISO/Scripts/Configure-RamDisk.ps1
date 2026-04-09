@@ -1,5 +1,9 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
 <#
 .SYNOPSIS
     Configure RAM disk with browser cache, temp, and build cache redirects.
@@ -40,17 +44,10 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
-$LogPath = 'C:\ProgramData\Winhance\Unattend\Logs\ramdisk-config.log'
-$null = New-Item -Path (Split-Path $LogPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
 
-function Write-Log {
-    param([string]$Message, [ValidateSet('INFO','SUCCESS','WARNING','ERROR')][string]$Level = 'INFO')
-    $ts    = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $entry = "[$ts] [$Level] $Message"
-    Add-Content -Path $LogPath -Value $entry -Encoding UTF8 -ErrorAction SilentlyContinue
-    $color = switch ($Level) { 'ERROR' { 'Red' } 'WARNING' { 'Yellow' } 'SUCCESS' { 'Green' } default { 'White' } }
-    Write-Host $entry -ForegroundColor $color
-}
+# Initialize centralized logging
+$logFile = 'C:\ProgramData\Winhance\Unattend\Logs\ramdisk-config.log'
+Initialize-Logging -LogPath $logFile
 
 function Ensure-Dir {
     param([string]$Path)

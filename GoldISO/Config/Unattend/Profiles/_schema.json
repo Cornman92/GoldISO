@@ -1,0 +1,315 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "./_schema.json",
+  "title": "GoldISO Unattend Profile Schema",
+  "description": "JSON Schema for validating GoldISO unattend configuration profiles",
+  "type": "object",
+  "required": ["name", "description", "version", "targetOS", "variables"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the profile"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the profile's purpose"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the profile"
+    },
+    "targetOS": {
+      "type": "string",
+      "description": "Target Windows version (e.g., 'Windows 11 25H2')"
+    },
+    "author": {
+      "type": "string",
+      "description": "Author or organization that created the profile"
+    },
+    "variables": {
+      "type": "object",
+      "description": "Unattend.xml substitution variables",
+      "properties": {
+        "PRODUCT_KEY": { "type": "string" },
+        "IMAGE_INDEX": { "type": "string" },
+        "WINDOWS_DISK_ID": { "type": "string" },
+        "WINDOWS_PARTITION_ID": { "type": "string" },
+        "APPS_DISK_ID": { "type": "string" },
+        "MEDIA_DISK_ID": { "type": "string" },
+        "INPUT_LOCALE": { "type": "string" },
+        "SYSTEM_LOCALE": { "type": "string" },
+        "UI_LANGUAGE": { "type": "string" },
+        "USER_LOCALE": { "type": "string" },
+        "UI_FALLBACK": { "type": "string" },
+        "NETWORK_LOCATION": { "type": "string" },
+        "PROTECT_YOUR_PC": { "type": "string" },
+        "SKIP_USER_OOBE": { "type": "string" },
+        "SKIP_MACHINE_OOBE": { "type": "string" },
+        "DISABLE_INTERNET": { "type": "string" },
+        "INSTALL_RAMDISK": { "type": "string" },
+        "INSTALL_CHOCOLATEY": { "type": "string" },
+        "DNS_PRIMARY": { "type": "string" },
+        "DNS_SECONDARY": { "type": "string" },
+        "GPU_VENDOR": { "type": "string" },
+        "GPU_MODEL": { "type": "string" }
+      },
+      "additionalProperties": { "type": "string" }
+    },
+    "diskConfiguration": {
+      "type": "object",
+      "properties": {
+        "template": { "type": "string" },
+        "windowsDisk": {
+          "type": "object",
+          "properties": {
+            "diskId": { "type": "integer" },
+            "type": { "type": "string", "enum": ["NVMe", "SSD", "HDD"] },
+            "partitions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "size": { "type": "integer" },
+                  "format": { "type": "string" },
+                  "label": { "type": "string" },
+                  "letter": { "type": "string" },
+                  "extend": { "type": "boolean" }
+                }
+              }
+            },
+            "postActions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": { "type": "string" },
+                  "partition": { "type": "string" },
+                  "shrinkByMB": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "secondaryDisks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "diskId": { "type": "integer" },
+              "type": { "type": "string" },
+              "purpose": { "type": "string" },
+              "wipeOnly": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "oobe": {
+      "type": "object",
+      "properties": {
+        "hideEULAPage": { "type": "boolean" },
+        "hideOEMRegistrationScreen": { "type": "boolean" },
+        "hideOnlineAccountScreens": { "type": "boolean" },
+        "hideWirelessSetupInOOBE": { "type": "boolean" },
+        "hideLocalAccountScreen": { "type": "boolean" },
+        "hideOEMScreen": { "type": "boolean" },
+        "networkLocation": { "type": "string" },
+        "protectYourPC": { "type": "integer" },
+        "skipUserOOBE": { "type": "boolean" },
+        "skipMachineOOBE": { "type": "boolean" },
+        "disableInternetConnection": { "type": "boolean" }
+      }
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "enable": { "type": "array", "items": { "type": "string" } },
+        "disable": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "gamingOptimizations": {
+      "type": "object",
+      "properties": {
+        "disableGameDVR": { "type": "boolean" },
+        "disableNaglesAlgorithm": { "type": "boolean" },
+        "optimizeNetBIOS": { "type": "boolean" },
+        "disableSysMain": { "type": "boolean" },
+        "highPerformancePowerPlan": { "type": "boolean" },
+        "gpuPowerManagement": { "type": "boolean" },
+        "excludeGamingDrivesFromIndexing": { "type": "boolean" },
+        "disableDefragOnGamingDrives": { "type": "boolean" }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "properties": {
+        "disableTelemetry": { "type": "boolean" },
+        "disableCortana": { "type": "boolean" },
+        "disableLocation": { "type": "boolean" },
+        "disableCameraAccess": { "type": "boolean" },
+        "disableMicrophoneAccess": { "type": "boolean" },
+        "disableAdvertisingID": { "type": "boolean" },
+        "disableFeedbackHub": { "type": "boolean" },
+        "disableBackgroundApps": { "type": "boolean" },
+        "disableWindowsTips": { "type": "boolean" },
+        "disableWindowsRecall": { "type": "boolean" },
+        "disableBingSearch": { "type": "boolean" },
+        "blockTelemetryHosts": { "type": "boolean" }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "disableSMBv1": { "type": "boolean" },
+        "enableSMBv3": { "type": "boolean" },
+        "enableWindowsFirewall": { "type": "boolean" },
+        "configureDefender": { "type": "boolean" },
+        "enableVBS": { "type": "boolean" },
+        "enableCFG": { "type": "boolean" },
+        "disableLM_NTLM": { "type": "boolean" },
+        "disableBitLocker": { "type": "boolean" },
+        "disableWindowsHello": { "type": "boolean" },
+        "defenderExclusions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "firstLogonCommands": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    },
+    "scripts": {
+      "type": "object",
+      "properties": {
+        "winhancements": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "configFile": { "type": "string" },
+            "autoRun": { "type": "boolean" }
+          }
+        },
+        "winutil": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "configFile": { "type": "string" },
+            "autoRun": { "type": "boolean" }
+          }
+        },
+        "customTweaks": {
+          "type": "object",
+          "properties": {
+            "systemTweaks": { "type": "boolean" },
+            "userTweaks": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "debloat": {
+      "type": "object",
+      "properties": {
+        "removeApps": { "type": "array", "items": { "type": "string" } },
+        "preserveApps": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "remoteAccess": {
+      "type": "object",
+      "properties": {
+        "enableRDP": { "type": "boolean" },
+        "rdpSubnet": { "type": "string" },
+        "disableNLA": { "type": "boolean" },
+        "createRemoteAccessShortcut": { "type": "boolean" }
+      }
+    },
+    "drivers": {
+      "type": "object",
+      "properties": {
+        "injectFromUSB": { "type": "boolean" },
+        "injectCategories": { "type": "array", "items": { "type": "string" } },
+        "postInstallFromUSB": { "type": "boolean" },
+        "postInstallCategories": { "type": "array", "items": { "type": "string" } },
+        "postInstallDrivers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "version": { "type": "string" },
+              "path": { "type": "string" }
+            }
+          }
+        },
+        "postInstallOptions": {
+          "type": "object",
+          "properties": {
+            "method": { "type": "string" },
+            "stageDriversPath": { "type": "string" },
+            "installDuringFirstLogon": { "type": "boolean" },
+            "rebootAfterInstall": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "packages": {
+      "type": "object",
+      "properties": {
+        "injectFromUSB": { "type": "boolean" },
+        "msix": { "type": "array", "items": { "type": "string" } },
+        "appx": { "type": "array", "items": { "type": "string" } },
+        "updates": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "portableApps": {
+      "type": "object",
+      "properties": {
+        "deployFromUSB": { "type": "boolean" },
+        "destination": { "type": "string" },
+        "apps": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "ramdisk": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "sizeMB": { "type": "integer" },
+        "driveLetter": { "type": "string" },
+        "persist": { "type": "boolean" },
+        "redirectBrowserCache": { "type": "boolean" }
+      }
+    },
+    "diskOptimization": {
+      "type": "object",
+      "properties": {
+        "shrinkWindowsGB": { "type": "integer" },
+        "recoveryPartitionGB": { "type": "integer" },
+        "overprovisioningGB": { "type": "integer" },
+        "runDuringSpecialize": { "type": "boolean" }
+      }
+    },
+    "directories": {
+      "type": "object",
+      "properties": {
+        "createOnC": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "settingsMigration": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "scriptPath": { "type": "string" }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "logPath": { "type": "string" },
+        "logFiles": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "additionalProperties": true
+}

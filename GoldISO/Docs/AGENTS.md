@@ -1,43 +1,143 @@
-# GoldISO - Agent Guidance
+# GoldISO - Agent Guidance Document
 
-**Last Updated**: 2026-04-08 (Pipeline v2, PassThru, Sequential FirstLogon)
+This file provides comprehensive guidance for AI agents working with the GoldISO project.
 
-## Project Identity
-GoldISO — Custom Windows 11 25H2 ISO build for "GamerOS" desktop. Integrates drivers, packages, apps, and unattended setup into a bootable ISO.
+## Project Overview
 
-## Prerequisites
-- Windows 10/11 or Windows Server 2019+ (for DISM)
-- PowerShell 5.1+, run as Administrator
-- Windows ADK with Deployment Tools (for `oscdimg`)
-- 20 GB+ free space on C:
-- Source ISO: `Win11_25H2_English_x64_v2.iso` in project root
+**GoldISO** is a custom Windows 11 25H2 ISO build system for "GamerOS" — a gaming-optimized Windows desktop. It integrates offline driver injection, Windows Update packages, MSIX/APPX bundles, an unattended answer file, and a custom PowerShell profile into a bootable ISO via DISM and oscdimg.
 
-## Source ISO & Paths
-- **Source ISO**: `C:\Users\C-Man\GoldISO\Win11_25H2_English_x64_v2.iso`
-- **GWIG Project**: `C:\Users\C-Man\GWIG` (main development repo with DISM pipeline tools)
-- **Working Directory**: `C:\Users\C-Man\GoldISO`
+## Project Structure
 
-## Log Locations
-- Build scripts: `C:\GoldISO_Build\build.log`
-- Post-install scripts: `C:\Scripts\Logs\`
+```
+GoldISO/
+├── Scripts/                    # Build and deployment scripts
+│   ├── Build-GoldISO.ps1      # Main ISO build script
+│   ├── Test-UnattendXML.ps1   # Answer file validator
+│   ├── Capture-Image.ps1      # WinPE image capture
+│   ├── Apply-Image.ps1        # WinPE image deployment
+│   ├── Modules/
+│   │   └── GoldISO-Common.psm1  # Shared functions
+│   └── ...
+├── Config/
+│   ├── autounattend.xml       # Unattended installation config (canonical source)
+│   ├── winget-packages.json   # Application manifest
+│   └── PowerShellProfile/     # Custom PowerShell profile
+├── Drivers/                   # Driver injection source
+├── Packages/                  # Windows packages (.cab, .msu)
+├── Applications/
+│   └── Portableapps/        # Portable applications
+├── Tests/                     # Pester test suite
+├── Docs/                      # Documentation
+└── README.md                  # Main documentation
+```
+
+## Critical Paths
+
+- **Source ISO**: `Win11_25H2_English_x64_v2.iso` (in project root)
+- **Canonical Answer File**: `autounattend.xml` (project root)
+- **Config Answer File**: `Config/autounattend.xml` (reference copy)
+- **Build Output**: `GamerOS-Win11x64Pro25H2.iso`
+- **Working Directory**: `C:\GoldISO_Build`
+- **Mount Point**: `C:\Mount`
+- **Log Directory**: `Scripts/Logs/` (gitignored)
+
+## Build Pipeline
+
+1. Mount source ISO and copy to working dir
+2. Mount `install.wim` for offline servicing
+3. Inject drivers from `Drivers/`
+4. Inject packages from `Packages/`
+5. Copy `Config/autounattend.xml` to ISO root
+6. Rebuild ISO with `oscdimg`
+
+## autounattend.xml Critical Sections
+
+| Pass | Purpose |
+|------|---------|
+| `windowsPE` | Disk partitioning, WinRE, offline services |
+| `specialize` | .NET 3.5, driver injection, packages |
+| `oobeSystem` | 47 FirstLogonCommands, auto-logon as Administrator |
+
+**Disk Layout (Hardware-Specific):**
+- **Disk 2** (Primary NVMe): EFI (300 MB) + MSR (16 MB) + Windows C: (~843 GB) + Recovery (15 GB) + ~90 GB unallocated (Samsung OP)
+- **Disk 0/1**: Configured post-boot via `Configure-SecondaryDrives.ps1`
+
+## Script Standards
+
+All scripts must:
+- Begin with `#Requires -Version 5.1` and `[CmdletBinding()]`
+- Import `GoldISO-Common.psm1`
+- Call `Test-GoldISOAdmin -ExitIfNotAdmin`
+- Use `Write-GoldISOLog` (never `Write-Host`)
+- Use `Join-Path` (never string concatenation)
+- Set `$ErrorActionPreference = "Stop"`
+- Log to `Logs/` directory
+
+## Shared Module Functions
+
+`GoldISO-Common.psm1` provides:
+
+### Logging
+- `Write-GoldISOLog` / `Write-Log` (alias)
+- `Initialize-Logging`
+- `Start-GoldISOTranscript`
+- `Stop-GoldISOTranscript`
+
+### Validation
+- `Test-GoldISOAdmin`
+- `Test-GoldISOPath`
+- `Test-GoldISOWinPE`
+- `Test-GoldISODiskSpace`
+- `Test-GoldISOCommand`
+- `Test-DiskTopology`
+
+### Utilities
+- `Format-GoldISOSize`
+- `Get-GoldISORoot`
+- `Invoke-GoldISOCommand`
+- `Get-ComponentHash`
+- `Import-BuildManifest`
+- `Export-BuildManifest`
+- `Invoke-GoldISOErrorThrow`
+- `Register-GoldISOCleanup`
+- `Invoke-GoldISOCleanup`
+
+## Validation Commands
+
+```powershell
+# Environment check
+.\Scripts\Test-Environment.ps1
+
+# Validate answer file
+.\Scripts\Test-UnattendXML.ps1
+
+# Run test suite
+.\Tests\Run-AllTests.ps1
+```
 
 ## Common Commands
-All scripts require **Administrator PowerShell**. Scripts use `$ErrorActionPreference = "Stop"` by default (except `Build-GoldISO.ps1`, which uses `"Continue"` for resilience).
 
 ### Pre-Build Validation
 ```powershell
-# Environment check (run once per session)
+# Environment check (once per session)
 .\Scripts\Test-Environment.ps1
 
 # Validate autounattend.xml (before every build)
 .\Scripts\Test-UnattendXML.ps1
 .\Scripts\Test-UnattendXML.ps1 -Verbose   # detailed failure output
-.\Scripts\Test-UnattendXML.ps1 -PassThru # returns structured object for pipelines
+
+# Run test suite
+.\Tests\Run-AllTests.ps1
 ```
 
-### Build ISO
+### Build Commands
 ```powershell
-# Standard build
+# Full pipeline (validates + builds + optional VM deploy)
+.\Scripts\Start-BuildPipeline.ps1
+.\Scripts\Start-BuildPipeline.ps1 -DeployToVM -Verbose
+.\Scripts\Start-BuildPipeline.ps1 -SkipTests -KeepArtifacts 3
+
+# Direct build
 .\Scripts\Build-GoldISO.ps1
 
 # Build with specific modes
@@ -64,259 +164,140 @@ All scripts require **Administrator PowerShell**. Scripts use `$ErrorActionPrefe
 .\Scripts\Configure-SecondaryDrives.ps1   # partition Disk 0 and Disk 1 after Windows install
 ```
 
-### Manual ISO rebuild
-```powershell
-oscdimg -bootdata:2#p0,e,b"C:\ISO_Work\boot\etfsboot.com"#pEF,e,b"C:\ISO_Work\efi\microsoft\boot\efisys.bin" -o -u2 -udfver102 -l"GAMEROS" "C:\ISO_Work" "GamerOS_Win11_25H2.iso"
-```
+## Architecture
 
-## Build Script Parameters
+### Directory Layout
+| Path | Purpose |
+|------|---------|
+| `autounattend.xml` | Build-time copy (generated by Build-GoldISO.ps1) |
+| `Config/autounattend.xml` | **Canonical source** — always edit this one |
+| `Config/winget-packages.json` | App manifest read by `install-usb-apps.ps1` |
+| `Config/PowerShellProfile/` | Custom modular PowerShell profile (deployed to `C:\PowerShellProfile\`) |
+| `Config/DiskLayouts/` | Disk partition templates — each layout is a paired `{Name}.xml` + `{Name}.json` |
+| `Config/Unattend/Core/` | Master autounattend template for modular builds |
+| `Config/Unattend/Passes/` | Per-pass XML fragments (`01-offlineServicing.xml` … `07-oobeSystem.xml`) |
+| `Config/Unattend/Profiles/` | JSON build profiles used by `Build-Autounattend.ps1` |
+| `Config/Unattend/Modules/Scripts/` | Scripts embedded or referenced during setup (e.g., `ProtectLetters.ps1`) |
+| `Scripts/` | All build, validation, deployment, and utility scripts |
+| `Scripts/Build/` | Modular build helpers (`Build-Autounattend.ps1`, `Build-Unattend.ps1`) |
+| `Scripts/Modules/GoldISO-Common.psm1` | Shared module: logging, admin check, path validation |
+| `Drivers/` | Hardware drivers organized by device class |
+| `Packages/` | Windows Updates (.msu/.cab) and MSIX/APPX bundles |
+| `Applications/` | Standalone installers referenced in FirstLogonCommands |
+| `Logs/` | Runtime logs — gitignored (`Logs/Pipeline/` for pipeline runs) |
+| `Docs/` | All AI agent guidance, roadmap, plan, and workflow docs |
 
-| Parameter | Purpose |
-|-----------|---------|
-| `-BuildMode` | Build mode: `Audit` (sysprep audit mode), `Capture` (WIM capture) |
-| `-SkipDriverInjection` | Skip driver injection for testing |
-| `-SkipPackageInjection` | Skip package injection for testing |
-| `-SkipPortableApps` | Skip portable apps copy for testing |
-| `-IncludeAuditScripts` | Include audit mode scripts |
-| `-CaptureWIMPath` | Custom WIM capture path |
-| `-ExportUserData` | Export user settings for migration |
-| `-MaxUserDataSizeGB` | Max user data size for migration (default: 5 GB) |
-| `-OutputISO` | Custom output ISO path |
-| `-Verbose` | Enable verbose logging |
-
-## Test-UnattendXML.ps1 Parameters
-
-| Parameter | Purpose |
-|-----------|---------|
-| `-AnswerFile` | Custom answer file path |
-| `-Strict` | Treat warnings as errors |
-| `-PassThru` | Returns structured hashtable `{Status, Passed, Warnings, Errors}` |
-
-## Directory Structure
-```
-GoldISO/
-├── autounattend.xml              # Unattended answer file (PRIMARY)
-├── autounattend.xml.backup       # Previous version (multi-disk config)
-├── winget-packages.json          # Categorized app manifest (winget install source)
-├── Configure-SecondaryDrives.ps1 # Post-boot script for Disk 0/1 partitioning
-├── WinhanceInstaller.exe         # Winhance installer binary
-├── GamerOS Windows 11.xml        # NTLite preset (component removal list)
-├── Config/PowerShellProfile/     # Custom PowerShell profile
-│   ├── Microsoft.PowerShell_profile.ps1
-│   ├── init.ps1
-│   ├── PSProfile.C-Man/          # 30+ modular profile scripts
-│   └── Config/profile-config.json
-├── Scripts/                      # Build, validation, and deployment scripts
-│   ├── Build-GoldISO.ps1         # Main ISO builder
-│   ├── Test-UnattendXML.ps1      # Answer file validator
-│   ├── Test-Environment.ps1      # Environment pre-flight checks
-│   ├── Capture-Image.ps1        # WinPE WIM capture
-│   ├── Apply-Image.ps1          # WinPE WIM apply
-│   ├── Build-ISO-With-Settings.ps1 # Settings migration build
-│   └── Modules/GoldISO-Common.psm1 # Shared utilities
-├── Drivers/                      # Hardware drivers organized by device class
-│   ├── Display adapters/         # NVIDIA RTX 3060 Ti (32.0.15.6094) — POST-INSTALL
-│   ├── System devices/           # Intel MEI, Host Bridge — INJECTED OFFLINE
-│   ├── Network adapters/         # Network drivers — INJECTED OFFLINE
-│   ├── Storage controllers/      # Storage drivers — INJECTED OFFLINE
-│   ├── IDE ATA ATAPI controllers/# IDE drivers — INJECTED OFFLINE
-│   ├── Extensions/               # Extension drivers — INJECTED OFFLINE
-│   ├── Software components/      # Software drivers — INJECTED OFFLINE
-│   ├── Audio Processing Objects/ # Audio drivers — INJECTED OFFLINE
-│   ├── Sound, video and game/    # Audio drivers — INJECTED OFFLINE
-│   ├── Monitors/                 # Monitor drivers — INJECTED OFFLINE
-│   └── Universal Serial Bus/     # Logitech G403 HERO — POST-INSTALL
-├── Packages/                     # Windows updates, MSIX bundles, APPX packages
-│   ├── *.msu                     # Cumulative updates, .NET 4.8.1 updates
-│   ├── *.cab                     # Driver/feature CABs
-│   ├── *.msixbundle              # PowerShell 7, Terminal, AppInstaller
-│   └── *.appx                    # WindowsAppRuntime, UI.Xaml
-└── Applications/
-    ├── Winslopr-26.03.230-win-x64/  # Windows optimization tool (scripts + plugins)
-    ├── windowsmanager.exe
-    └── wox-windows-amd64.exe
-```
-
-## Build Pipeline (manual steps automated by Build-GoldISO.ps1)
-1. Mount source ISO (`Win11_25H2_English_x64_v2.iso`) and copy to working dir (`C:\GoldISO_Build`)
+### Build Pipeline
+1. Mount source ISO (`Win11-25H2x64v2.iso`) and copy to working dir (`C:\GoldISO_Build`)
 2. Mount `install.wim` at `C:\Mount` for offline servicing
 3. Inject all drivers from `Drivers/` via `Add-WindowsDriver -Recurse`
 4. Inject packages from `Packages/` via `Add-WindowsPackage` (errors skipped gracefully for outdated packages)
 5. Provision MSIX/APPX bundles (PowerShell 7, Terminal, AppInstaller, etc.)
-6. Copy `autounattend.xml` to ISO root
+6. If `-UseModular`: call `Scripts/Build/Build-Autounattend.ps1 -DiskLayout <layout>` to generate `autounattend.xml`; else copy `Config/autounattend.xml` to ISO root
 7. Dismount and rebuild ISO with `oscdimg` (UEFI dual-boot)
 
-## autounattend.xml — Critical Sections
+### Disk Layout System (Phase 3)
 
-### Pass Overview
-| Pass | Purpose |
-|------|---------|
-| `windowsPE` | Disk partitioning, WinRE, offline services |
-| `specialize` | .NET 3.5, driver injection, package installation, ExecutionPolicy |
-| `oobeSystem` | 47 FirstLogonCommands (sequential 1-47), auto-logon as Administrator |
+Layouts live in `Config/DiskLayouts/` as paired `{LayoutName}.xml` + `{LayoutName}.json`.
 
-### Disk Configuration (hardware-specific — verify topology before deployment)
-- **Disk 2** (Primary NVMe): EFI (300 MB) + MSR (16 MB) + Windows C: (~843 GB) + Recovery (15 GB) + ~90 GB unallocated (Samsung NVMe overprovisioning — do NOT partition)
-- **Disk 0 / Disk 1**: Wiped only during install; `Configure-SecondaryDrives.ps1` creates partitions post-boot
+**Variable substitution:** XML templates use `{{VARIABLE_NAME}}` placeholders. `Build-Autounattend.ps1` reads the companion JSON to get defaults and applies string replacement before embedding the layout XML into the answer file.
+
+```
+Config/DiskLayouts/
+  GamerOS-3Disk.xml / .json     ← LOCKED — DO NOT MODIFY sizes or letters
+  SingleDisk-DevGaming.xml / .json
+  SingleDisk-Generic.xml / .json
+```
+
+**To add a new layout:**
+1. Create `{Name}.xml` (use `{{VARIABLE}}` for configurable values) and `{Name}.json` (define `variables`, `disks`, `driveLetters`)
+2. Add `{Name}` to `ValidateSet` in both `Build-Autounattend.ps1` and `Build-GoldISO.ps1`
+3. Update this doc and `ROADMAP.md`
+
+### Drive Letter Protection (Phase 4)
+
+`Config/Unattend/Modules/Scripts/ProtectLetters.ps1` runs as a FirstLogonCommand **before** any folder-creation commands. It reassigns removable media that has claimed a protected letter to a fallback letter.
+
+**Protected letters for GamerOS-3Disk:** D, E, F, C, U, V, W, X, Y, Z, R, T, M  
+**Fallback pool:** H, I, J, K, L, N, O, P, Q
+
+Integration points:
+- `Config/Unattend/Passes/07-oobeSystem.xml` Order 36 (canonical pass file)
+- `Config/autounattend.xml` Order 48 (canonical answer file)
+- `Build-Autounattend.ps1` `Build-FirstLogonCommands` (modular builder, `GamerOS-3Disk` only)
+
+### GamerOS-3Disk Folder Creation
+
+After drive letter protection, FirstLogonCommands create the expected folder structure:
+- `D:\P-Apps` and `D:\Scratch` — on the 232 GB SSD (Disk 0, letter D)
+- `E:\Media` and `E:\Backups` — on the 1 TB HDD (Disk 1, letter E)
+
+These folders are created at Orders 49/50 in `Config/autounattend.xml` and at Orders 37/38 in `07-oobeSystem.xml`.
 
 ### Driver Injection Strategy
-- **Offline (DISM into WIM)**: Intel system devices, ASUS, network adapters, storage controllers, IDE/ATA, extensions, software components, audio, monitors
-- **Post-boot (FirstLogon via pnputil)**: NVIDIA RTX 3060 Ti, Logitech G403 HERO
+- **Offline (DISM into WIM)**: Intel system devices, ASUS, network adapters, storage controllers, IDE ATA/ATAPI controllers
+- **Post-boot (FirstLogon via pnputil)**: Extensions, Software components, Audio Processing Objects (APOs), Sound/video/game controllers, Monitors, NVIDIA RTX 3060 Ti, Logitech G403 HERO
 
-### Winhance Scripts (extracted from autounattend.xml `<Extensions>`)
-These scripts live in `Scripts/` but are also embedded in autounattend.xml to extract themselves to `C:\ProgramData\Winhance\Unattend\Scripts\` during specialize. **Do not manually pre-create those paths.**
+Extensions and audio/monitor categories require a running OS for correct PnP enumeration — injecting them offline via DISM causes missed associations. They are installed via `pnputil /add-driver /subdirs /install` at FirstLogon Order 51 in `Config/autounattend.xml`.
 
-| Script | What it does |
-|--------|-------------|
-| `Scripts/shrink-and-recovery.ps1` | Shrinks C: by 105 GB, creates 15 GB Recovery partition, leaves ~90 GB for Samsung OP |
-| `Scripts/install-usb-apps.ps1` | Installs winget packages from `winget-packages.json` by category |
-| `Scripts/install-ramdisk.ps1` | Installs SoftPerfect RAM Disk (USB-first, download fallback) |
-| `Scripts/createramdisk.cmd` | Creates 8 GB RAM disk at R: |
-| `Scripts/tweaks-system.cmd` | HKLM performance registry tweaks |
-| `Scripts/tweaks-user.cmd` | HKCU performance registry tweaks |
+## Script Patterns
 
-## Shared Module
-`Scripts/Modules/GoldISO-Common.psm1` provides 8 exported functions:
-
-| Function | Purpose |
-|----------|---------|
-| `Initialize-Logging` | Sets up log file path and ensures log directory exists |
-| `Write-GoldISOLog` | Writes timestamped log messages with level (INFO/WARN/ERROR/SUCCESS) |
-| `Test-GoldISOAdmin` | Tests for Administrator privileges, optionally exits if not admin |
-| `Test-GoldISOPath` | Validates file/directory existence, optionally creates directories |
-| `Format-GoldISOSize` | Formats bytes to human-readable size (KB/MB/GB/TB) |
-| `Test-GoldISOWinPE` | Detects WinPE environment (multiple methods) |
-| `Get-GoldISORoot` | Returns GoldISO project root path |
-| `Invoke-GoldISOCommand` | Executes commands with timeout and captures output |
-
-## Manifests & Infrastructure Scripts
-
-### Build Manifests
-| File | Purpose |
-|------|---------|
-| `Config/build-manifest.json` | Build version tracking, profiles |
-| `Drivers/download-manifest.json` | Driver download URLs, installed versions |
-| `Packages/manifest.json` | Windows Update package tracking |
-| `Config/hardware-matrix.json` | Tested hardware profiles |
-
-### Infrastructure Scripts
-```powershell
-# View current build manifest
-.\Scripts\Get-BuildManifest.ps1
-.\Scripts\Get-BuildManifest.ps1 -ShowDetails
-
-# Driver management
-.\Scripts\Get-DriverVersions.ps1                     # Scan and report driver versions
-
-# Pre-build validation
-.\Scripts\Backup-Config.ps1                          # Backup config before build
-
-# Post-build validation
-.\Tests\Test-ISO.ps1                                  # Validate built ISO
-.\Tests\Verify-Drivers.ps1                             # Verify driver integrity
-
-# Pre-deployment validation
-.\Tests\Test-DiskTopology.ps1                         # Validate disk layout
-```
-
-## Winget Packages (winget-packages.json)
-All packages marked `"Optional": true` (but all should be installed). Category install paths:
-
-| Category | InstallPath | Packages |
-|---|---|---|
-| `browsers` | Default | Chrome, OperaGX |
-| `dev_tools` | `C:\Dev` | VS Code, Git, GitHub CLI, Python 3.12, Node.js LTS, PowerShell, OhMyPosh, zoxide, Docker Desktop, PowerToys |
-| `gaming` | `C:\Gaming` | Steam, Epic, GOG Galaxy, Battle.net, Xbox, Ubisoft Connect, EA, Parsec |
-| `media` | `C:\Media` | VLC, HandBrake, ShareX, Discord, Spotify |
-| `utilities` | `C:\Utils` | 7zip, Everything, Notepad++, WizTree, CPU-Z, GPU-Z, HWiNFO, WinRAR, Rufus, Ventoy, Windows Terminal, Logitech GHUB |
-| `remote` | `C:\Remote` | AnyDesk, Tailscale |
+Every script must:
+- Begin with `#Requires -Version 5.1` and `[CmdletBinding()]`
+- Import `GoldISO-Common.psm1` and call `Test-GoldISOAdmin -ExitIfNotAdmin`
+- Use `Write-GoldISOLog` (never `Write-Host`)
+- Use `Join-Path` (never string concatenation for paths)
+- Log to `Logs/` at project root — path: `Join-Path (Split-Path $PSScriptRoot -Parent) "Logs\<name>-<ts>.log"`
+- Never hardcode `C:\Users\C-Man\GoldISO` — use `Get-GoldISORoot` or `$script:ProjectRoot`
+- Wrap DISM calls in try/catch; log WARN and continue on failure
 
 ## PowerShell Profile
+
 - Source: `Config/PowerShellProfile/` (30+ modular scripts in `PSProfile.C-Man/`)
 - Deployed to `C:\PowerShellProfile\` during FirstLogon
-- Lazy-loading design; theme/config via `Config/profile-config.json`
-
-## GWIG Integration Notes
-- GWIG at `C:\Users\C-Man\GWIG` contains the full DISM pipeline tooling
-- Use GWIG's `Invoke-GamerOSPipeline-v2.ps1` for automated build
-- GWIG config: `Config/UnifiedGWIG-Config.json`
-- Pipeline stages in `Scripts/Core/Pipeline/` (94 stages)
-- See `C:\Users\C-Man\GWIG\Docs\Root\AGENTS.md` for GWIG-specific guidance
-
-## CI/CD Pipeline
-`Scripts/Start-BuildPipeline.ps1` orchestrates the full build with stages:
-- Environment validation
-- autounattend.xml validation (returns structured result via `-PassThru`)
-- Build execution (`Build-GoldISO.ps1`)
-- Post-build validation
-- Artifact generation and cleanup
-- Optional: `-DeployToVM` deploys to Hyper-V for automated testing
-- Optional: `-Notify` sends webhook on completion
-
-```powershell
-# Preferred build entry point
-.\Scripts\Start-BuildPipeline.ps1
-.\Scripts\Start-BuildPipeline.ps1 -DeployToVM -Verbose
-.\Scripts\Start-BuildPipeline.ps1 -SkipTests -KeepArtifacts 3
-
-# VM Testing
-.\Scripts\New-TestVM.ps1 -ISOPath "C:\Path\to\GoldISO.iso" -StartAfterCreation
-```
-
-## Additional Scripts (Post-Install / Utility)
-| Script | Purpose |
-|--------|---------|
-| `Scripts/Get-SystemHealth.ps1` | Full system health report (642 lines) |
-| `Scripts/Get-SystemReport.ps1` | Detailed system inventory (640 lines) |
-| `Scripts/Backup-Macrium.ps1` | Macrium Reflect backup automation |
-| `Scripts/Configure-RamDisk.ps1` | SoftPerfect RAM disk configuration |
-| `Scripts/Configure-RemoteAccess.ps1` | AnyDesk/Tailscale/RDP setup |
-| `Scripts/Invoke-SystemCleanup.ps1` | Post-install cleanup automation |
-| `Scripts/Manage-WindowsFeatures.ps1` | Windows optional features management |
-| `Scripts/Repair-SystemImage.ps1` | DISM/SFC repair automation |
-| `Scripts/Test-NetworkStack.ps1` | Network connectivity validation |
-| `Scripts/Measure-BuildTime.ps1` | Build performance analytics |
-| `Scripts/Test-VMPerformance.ps1` | Hyper-V VM performance testing |
-
-## Agent Documentation Index
-All agent-specific guidance files live in `Docs/`:
-| File | Agent | Focus |
-|------|-------|-------|
-| `Docs/AGENTS.md` | All | Master reference |
-| `Docs/SWE.md` | SWE agents | Code quality, patterns |
-| `Docs/KIMI.md` | Kimi | Long-context analysis |
-| `Docs/Gemini.md` | Gemini | Documentation, logs |
-| `Docs/QWEN.md` | Qwen | Script writing, XML/JSON |
-| `Docs/Nemotron.md` | Nemotron | Hardware, performance |
-| `Docs/Codex.md` | Codex | Code completion, templates |
-| `Docs/BigPickle.md` | BigPickle | Orchestration, status |
-| `Docs/ROADMAP.md` | All | Development roadmap |
+- Lazy-loading design; theme/config via `Config/PowerShellProfile/Config/profile-config.json`
 
 ## Key Constraints
-- **Always validate `autounattend.xml`** with `Test-UnattendXML.ps1` after any edit
-- **Do not bypass TPM/Secure Boot** — no requirement bypasses are present by design
-- **Network is disabled during OOBE** (intentional, re-enabled in FirstLogonCommands step 1)
-- **~95 GB unallocated on Disk 2 is intentional** Samsung NVMe overprovisioning
-- **Disk IDs are machine-specific** — Disk 2 = primary NVMe on target hardware; verify before deployment
-- **Test in Hyper-V VM** (`New-TestVM.ps1`) before bare-metal deployment
-- Logs: build scripts → `C:\GoldISO_Build\build.log`; post-install scripts → `C:\Scripts\Logs\`
 
-## Verification Checklist
-- [ ] ISO mounts and files accessible
-- [ ] WIM image mounts successfully (requires proper DISM permissions - target hardware or WinPE)
-- [ ] All .msu/.cab packages integrate without errors (outdated packages should skip gracefully)
-- [ ] All drivers integrate (check for architecture mismatches)
-- [ ] autounattend.xml validates (Test-UnattendXML.ps1 -PassThru returns Status: "Passed")
-- [ ] FirstLogon orders are sequential (1-47)
-- [ ] ISO rebuilds with UEFI boot support
-- [ ] Test install in VM before bare metal deployment
-- [ ] Verify Disk 0/1 are wiped but unpartitioned after install
-- [ ] Verify ~95 GB unallocated space on Disk 2 (Samsung OP)
-- [ ] Verify C:\Scripts, C:\Dev, C:\Gaming, C:\Utils, C:\Media, C:\Remote, C:\PowerShellProfile exist post-boot
-- [ ] Verify NVIDIA and Logitech drivers installed post-boot
-- [ ] Run Configure-SecondaryDrives.ps1 to partition Disk 0 and Disk 1
+1. Always validate `autounattend.xml` after edits
+2. `Config/autounattend.xml` is the **canonical source** — root `autounattend.xml` is a build-time copy
+3. No TPM/Secure Boot bypasses (by design)
+4. Network disabled during OOBE (re-enabled in FirstLogonCommands)
+5. ~95 GB unallocated on Disk 2 is **intentional** Samsung NVMe overprovisioning — do NOT add partitions
+6. Disk IDs are machine-specific
+7. Test in Hyper-V VM before bare-metal
+8. PS 5.1 only — no `??=`, no `ForEach-Object -Parallel`, no PS7-only syntax
+9. Log files go in `Logs/` (project root) — not `Scripts/Logs/` or script directory
 
-## Environment Notes
-- **WIM Mounting**: Requires proper DISM permissions. Works on target hardware or in WinPE (not VM limitations).
-- **Pipeline**: Use `-DeployToVM` to automatically create Hyper-V test VM after build.
-- **Language Files**: Non-English language files removed from Applications (7-Zip, CCleaner, FileVoyager, etc.).
+## Winhance Scripts (autounattend.xml Extensions)
+
+These extract to `C:\ProgramData\Winhance\Unattend\Scripts\` during specialize:
+
+| Script | Purpose |
+|--------|---------|
+| `shrink-and-recovery.ps1` | Shrinks C:, creates Recovery, leaves OP space |
+| `install-usb-apps.ps1` | Installs winget packages by category |
+| `install-ramdisk.ps1` | Installs SoftPerfect RAM Disk |
+| `createramdisk.cmd` | Creates 8 GB RAM disk at R: |
+| `tweaks-system.cmd` | HKLM performance registry tweaks |
+| `tweaks-user.cmd` | HKCU performance registry tweaks |
+
+## Prerequisites
+
+- Windows 10/11 or Windows Server 2019+
+- PowerShell 5.1+ (Administrator)
+- Windows ADK with Deployment Tools (for `oscdimg`)
+- 20 GB+ free space
+- Source ISO in project root
+
+## Notes
+
+- The test suite requires Pester 5.0+
+- All scripts are designed for PS 5.1 compatibility
+- Driver injection organized by device class
+- Portable apps auto-copied to ISO
+- Build creates working copy of source ISO (original never modified)
+
+---
+
+*Canonical AI agent guidance for GoldISO. This is the single source of truth for project documentation.*

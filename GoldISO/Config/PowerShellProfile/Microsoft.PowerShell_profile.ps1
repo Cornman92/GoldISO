@@ -191,6 +191,87 @@ if (Test-Path -Path $script:ProfileModulesPath) {
 
 #endregion
 
+#region ── direnv Integration ──────────────────────────────────────────────────────
+
+# Set up XDG directories for direnv on Windows
+$env:XDG_CONFIG_HOME = "$env:USERPROFILE\.config"
+$env:XDG_CACHE_HOME = "$env:LOCALAPPDATA\cache"
+$env:XDG_DATA_HOME = "$env:LOCALAPPDATA\direnv\data"
+
+# Use Git Bash instead of WSL bash (if Git is installed)
+$gitBashPath = "C:\Program Files\Git\bin\bash.exe"
+if (Test-Path $gitBashPath) {
+    $env:DIRENV_BASH = $gitBashPath
+}
+
+# Ensure direnv directories exist
+$null = New-Item -ItemType Directory -Force -Path "$env:XDG_CONFIG_HOME\direnv"
+$null = New-Item -ItemType Directory -Force -Path "$env:XDG_CACHE_HOME\direnv"
+$null = New-Item -ItemType Directory -Force -Path "$env:XDG_DATA_HOME"
+
+# Custom direnv integration for PowerShell
+if (Get-Command direnv -ErrorAction SilentlyContinue) {
+    $env:DIRENV_LOG_FORMAT = ""
+
+    # Function to update environment from direnv
+    function Update-DirenvEnvironment {
+        param([string]$Directory = (Get-Location).ProviderPath)
+
+        # Check if .envrc exists in current or parent directories
+        $checkDir = $Directory
+        while ($checkDir -and -not (Test-Path (Join-Path $checkDir '.envrc'))) {
+            $parent = Split-Path -Parent $checkDir
+            if ($parent -eq $checkDir) { break }
+            $checkDir = $parent
+        }
+
+        $envrcPath = Join-Path $checkDir '.envrc'
+        if (-not (Test-Path $envrcPath)) { return }
+
+        # Export environment variables from direnv
+        $exports = & direnv export bash 2>$null
+        if ($exports) {
+            # Normalize line endings and split on semicolons
+            $exportsNormalized = $exports -replace "`r`n", "" -replace "`n", ""
+            $statements = $exportsNormalized -split ';'
+            foreach ($stmt in $statements) {
+                $stmt = $stmt.Trim()
+                if ([string]::IsNullOrWhiteSpace($stmt)) { continue }
+                # Match: export VAR=$'value'
+                if ($stmt -match '^export\s+(\w+)=\$\x27(.+?)\x27$') {
+                    $varName = $Matches[1]
+                    $varValue = $Matches[2] -replace "\\'", "'" -replace '\\\\', '\'
+                    [Environment]::SetEnvironmentVariable($varName, $varValue, 'Process')
+                }
+                # Match: unset $'VAR'
+                elseif ($stmt -match '^unset\s+\$\x27(\w+)\x27$') {
+                    $varName = $Matches[1]
+                    [Environment]::SetEnvironmentVariable($varName, $null, 'Process')
+                }
+            }
+        }
+    }
+
+    # Create a wrapper for Set-Location to update direnv on directory change
+    $originalSetLocation = Get-Command Set-Location -CommandType Cmdlet
+    function global:Set-Location {
+        param([Parameter(ValueFromRemainingArguments = $true)]$Path)
+
+        if ($Path) {
+            & $originalSetLocation @Path
+        }
+        else {
+            & $originalSetLocation
+        }
+        Update-DirenvEnvironment
+    }
+
+    # Update environment for current directory on profile load
+    Update-DirenvEnvironment
+}
+
+#endregion
+
 #region â”€â”€ Profile Load Complete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 $script:ProfileLoadTimer.Stop()

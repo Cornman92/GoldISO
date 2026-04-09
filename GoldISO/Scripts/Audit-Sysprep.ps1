@@ -1,4 +1,8 @@
 #Requires -Version 5.1
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
 <#
 .SYNOPSIS
     Sysprep and shutdown - run in Audit mode before capturing
@@ -14,19 +18,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$logFile = "C:\Scripts\Logs\audit-sysprep.log"
-$logDir = Split-Path $logFile -Parent
-if (-not (Test-Path $logDir)) {
-    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-}
 
-function Write-Log {
-    param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp] [$Level] $Message"
-    Write-Host $entry
-    Add-Content -Path $logFile -Value $entry -Encoding UTF8
-}
+# Initialize logging
+$logFile = Join-Path (Split-Path $PSScriptRoot -Parent) "Logs\Audit-Sysprep-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+Initialize-Logging -LogPath $logFile
 
 Write-Log "=========================================="
 Write-Log "Audit Mode Sysprep Starting" "INFO"
@@ -45,7 +40,7 @@ if (-not $NoBackup) {
         Checkpoint-Computer -Description "GoldISO-PreSysprep" -RestorePointType "ApplicationAndServices" -ErrorAction SilentlyContinue | Out-Null
         Write-Log "System restore point created" "SUCCESS"
     } catch {
-        Write-Log "Could not create restore point (non-critical): $_" "WARNING"
+        Write-Log "Could not create restore point (non-critical): $_" "WARN"
     }
 }
 
@@ -63,15 +58,15 @@ foreach ($path in $cleanupFiles) {
 Write-Log "Cleanup complete" "SUCCESS"
 
 Write-Log "=========================================="
-Write-Log "WARNING: About to run sysprep!" "WARNING"
-Write-Log "This will generalize the Windows installation." "WARNING"
-Write-Log "After sysprep completes, the system will SHUT DOWN." "WARNING"
+Write-Log "WARNING: About to run sysprep!" "WARN"
+Write-Log "This will generalize the Windows installation." "WARN"
+Write-Log "After sysprep completes, the system will SHUT DOWN." "WARN"
 Write-Log "=========================================="
 Write-Host ""
 
 $confirm = Read-Host "Type 'YES' to continue (or 'N' to cancel)"
 if ($confirm -ne "YES") {
-    Write-Log "Cancelled by user" "WARNING"
+    Write-Log "Cancelled by user" "WARN"
     exit 0
 }
 

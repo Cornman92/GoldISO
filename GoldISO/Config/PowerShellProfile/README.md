@@ -3,11 +3,13 @@
 ## Quick Install
 
 1. **Backup your existing profile** (if any):
+
     ```powershell
     if (Test-Path $PROFILE) { Copy-Item $PROFILE "$PROFILE.bak.$(Get-Date -Format 'yyyyMMdd_HHmmss')" }
     ```
 
 2. **Extract the archive** to your PowerShell profile directory:
+
     ```powershell
     # For PowerShell 7+
     $profileDir = Split-Path $PROFILE.CurrentUserAllHosts -Parent
@@ -16,6 +18,7 @@
     ```
 
 3. **Copy files**:
+
     ```powershell
     Copy-Item -Path .\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE.CurrentUserAllHosts -Force
     @('Profile.d', 'Config', 'Themes', 'Templates', 'Templates.User') | ForEach-Object {
@@ -25,6 +28,7 @@
     ```
 
 4. **Install recommended tools** (optional but recommended):
+
     ```powershell
     winget install JanDeDobbeleer.OhMyPosh     # Prompt engine
     winget install ajeetdsouza.zoxide           # Smart cd
@@ -39,22 +43,27 @@
 ## Detailed Installation Steps
 
 ### Step 1: Determine Your PowerShell Profile Path
+
 Run one of the following commands based on your PowerShell version:
 
 **PowerShell 7+:**
+
 ```powershell
 Write-Host "Your profile path is:" -ForegroundColor Cyan
 $PROFILE.CurrentUserAllHosts
 ```
 
 **Windows PowerShell 5.1:**
+
 ```powershell
 Write-Host "Your profile path is:" -ForegroundColor Cyan
 $PROFILE
 ```
 
 ### Step 2: Create Profile Directory (If Needed)
+
 If the directory doesn't exist, create it:
+
 ```powershell
 $profileDir = Split-Path -Path $PROFILE.CurrentUserAllHosts -Parent
 if (-not (Test-Path $profileDir)) {
@@ -64,7 +73,9 @@ if (-not (Test-Path $profileDir)) {
 ```
 
 ### Step 3: Backup Existing Profile
+
 Always backup your existing profile before installing:
+
 ```powershell
 if (Test-Path $PROFILE.CurrentUserAllHosts) {
     $backupPath = "$PROFILE.CurrentUserAllHosts.bak.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
@@ -74,7 +85,9 @@ if (Test-Path $PROFILE.CurrentUserAllHosts) {
 ```
 
 ### Step 4: Install the Profile
+
 Copy the profile files from the extracted archive:
+
 ```powershell
 # Assuming you're in the extracted directory
 Copy-Item -Path .\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE.CurrentUserAllHosts -Force
@@ -90,7 +103,9 @@ Copy-Item -Path .\Microsoft.PowerShell_profile.ps1 -Destination $PROFILE.Current
 ```
 
 ### Step 5: Install Dependencies (Optional but Recommended)
+
 Run these commands to install recommended tools:
+
 ```powershell
 # Oh-My-Posh for enhanced prompt
 winget install JanDeDobbeleer.OhMyPosh
@@ -106,19 +121,23 @@ Install-Module Microsoft.PowerShell.SecretStore -Scope CurrentUser -Force
 ```
 
 ### Step 6: Restart Your Terminal
+
 Close and reopen your terminal application to load the new profile.
 
 ## Verification Steps
 
 ### Step 1: Check Profile Load Time
+
 After restarting your terminal, you should see a startup message similar to:
-```
+
+```text
 Profile loaded in XXXms
 Aliases: ws, cln, scripts, dev, gs, ga, gc, OC
 Use 'Show-Help' to display help
 ```
 
 ### Step 2: Verify Basic Functionality
+
 Run these commands to verify the profile is working correctly:
 
 ```powershell
@@ -145,7 +164,9 @@ if ($?) {
 } else {
     Write-Host "✗ Core alias 'ws' is not working" -ForegroundColor Red
 }
+```
 
+```powershell
 # Check if help function works
 Show-Help | Out-Null
 if ($?) {
@@ -153,7 +174,9 @@ if ($?) {
 } else {
     Write-Host "✗ Help system is not working" -ForegroundColor Red
 }
+```
 
+```powershell
 # Verify module load times tracking
 if ($Global:ProfileLoadTimes.Count -gt 0) {
     Write-Host "✓ Module load times are being tracked ($($Global:ProfileLoadTimes.Count) modules)" -ForegroundColor Green
@@ -163,6 +186,7 @@ if ($Global:ProfileLoadTimes.Count -gt 0) {
 ```
 
 ### Step 3: Test Lazy Loading
+
 To verify that lazy loading is working correctly:
 
 ```powershell
@@ -183,7 +207,9 @@ if ($afterCount -gt $initialCount) {
 ```
 
 ### Step 4: Check Logs Directory
+
 Verify that logging is working:
+
 ```powershell
 $logsDir = Join-Path -Path $script:ProfileRoot -ChildPath 'Logs'
 if (Test-Path $logsDir) {
@@ -209,7 +235,9 @@ if (Test-Path $logsDir) {
 If you encounter issues with the new profile, follow these steps to restore your previous configuration:
 
 ### Step 1: Identify Your Backup
+
 List your profile backups:
+
 ```powershell
 $profileDir = Split-Path -Path $PROFILE.CurrentUserAllHosts -Parent
 Get-ChildItem -Path $profileDir -Filter "Microsoft.PowerShell_profile.ps1.bak.*" | 
@@ -218,7 +246,9 @@ Get-ChildItem -Path $profileDir -Filter "Microsoft.PowerShell_profile.ps1.bak.*"
 ```
 
 ### Step 2: Restore from Backup
+
 Choose the most recent backup (or the one you know is good) and restore it:
+
 ```powershell
 # Replace 'BACKUP_FILENAME' with the actual backup file name from the list above
 $backupFile = Join-Path -Path $profileDir -ChildPath 'BACKUP_FILENAME'
@@ -227,47 +257,61 @@ Write-Host "Profile restored from backup: $backupFile" -ForegroundColor Green
 ```
 
 ### Step 3: Restart Your Terminal
+
 Close and reopen your terminal to use the restored profile.
 
 ### Step 4: Verify Restoration
+
 Run the verification steps above to confirm your previous profile is working correctly.
 
 ### Emergency Rollback (If Terminal Won't Start)
+
 If the profile prevents your terminal from starting properly:
 
 1. Open a new terminal window or tab
 2. Manually override the profile loading by starting PowerShell with `-NoProfile`:
+
    ```powershell
    pwsh -NoProfile  # For PowerShell 7+
    # or
    powershell -NoProfile  # For Windows PowerShell 5.1
    ```
+
 3. Once in a clean session, restore your backup as described above
 4. Restart your terminal normally
 
 ## Troubleshooting Common Issues
 
 ### Issue: Profile Takes Too Long to Load
+
 **Solution:** Check the load times report:
+
 ```powershell
 loadtimes  # Shows module load times
 ```
+
 Consider disabling modules you don't use by editing `Microsoft.PowerShell_profile.ps1` and removing them from the `$script:ImmediateModules` or `$script:DeferredModules` arrays.
 
 ### Issue: Specific Function Not Working
-**Solution:** 
+
+**Solution:**
+
 1. Check if it's a lazy-loaded function: `Get-Command <function-name>`
 2. If it shows as a stub, try calling it once to trigger loading
 3. Check error logs: `Get-Content (Join-Path $script:ProfileRoot 'Logs\errors\error_*.log') -Tail 20`
 
 ### Issue: Aliases Not Working
-**Solution:** 
+
+**Solution:**
+
 1. Check if the alias module loaded: `Get-Module | Where-Object {$_.Name -like '*Alias*'}`
 2. Reload aliases: `. (Join-Path $script:ProfileModulesPath '04-Aliases.ps1')`
 3. Check if the underlying function exists: `Get-Command <function-behind-alias>`
 
 ### Issue: Theme Not Applying Correctly
+
 **Solution:**
+
 1. Verify Oh-My-Posh is installed: `oh-my-posh --version`
 2. Try switching themes: `theme Matrix` (or Cyberpunk, Dracula, Monochrome)
 3. Check your theme config: `Get-ProfileConfig | Select-Object -ExpandProperty Theme`
@@ -305,7 +349,7 @@ Set-ProfileConfig -Key "EnableSessionLogging" -Value $true
 
 ## Structure
 
-```
+```text
 ~/PowerShell/
 ├── Microsoft.PowerShell_profile.ps1   # Main loader (timed, modular)
 ├── Profile.d/                         # 21 modules loaded in sort order
@@ -403,10 +447,10 @@ Set-ProfileConfig -Key "EnableSessionLogging" -Value $true
 | Command              | Description                          |
 |----------------------|--------------------------------------|
 | `envload`            | Load .env from current directory     |
-| `envload -Profile prod` | Load .env.prod                   |
+| `envload -Profile prod`| Load .env.prod                     |
 | `envunload`          | Restore previous env variables       |
 | `envstack`           | Show loaded environment stack        |
-| `envdiff <a> <b>`   | Compare two .env files               |
+| `envdiff <a> <b>`    | Compare two .env files               |
 | `envls`              | List available .env files            |
 | `envauto`            | Enable auto-load on cd               |
 | `envtemplate`        | Generate .env.example from .env      |
@@ -448,6 +492,7 @@ Transforms: Base64Encode/Decode, JsonPretty/Minify, Trim, Upper, Lower, TitleCas
 ## Themes
 
 Switch with `Set-ProfileTheme -Name <theme> -Save`:
+
 - **Matrix** (default) - Green on black
 - **Cyberpunk** - Neon magenta/cyan
 - **Dracula** - Purple/cyan dark theme

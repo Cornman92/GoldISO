@@ -1,4 +1,12 @@
 #Requires -Version 5.1
+
+# Import common module (may not exist in Audit environment, so wrap in try/catch)
+try {
+    Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force -ErrorAction Stop
+} catch {
+    # Module not available, define minimal local logging
+}
+
 <#
 .SYNOPSIS
     Create desktop shortcut to continue installation from Audit mode
@@ -14,15 +22,13 @@ param()
 
 $ErrorActionPreference = "Stop"
 
-function Write-Log {
-    param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp] [$Level] $Message"
-    switch ($Level) {
-        "ERROR" { Write-Host $entry -ForegroundColor Red }
-        "SUCCESS" { Write-Host $entry -ForegroundColor Green }
-        "WARNING" { Write-Host $entry -ForegroundColor Yellow }
-        default { Write-Host $entry }
+# Define local Write-Log if module not loaded
+if (-not (Get-Command Write-GoldISOLog -ErrorAction SilentlyContinue)) {
+    function Write-Log {
+        param([string]$Message, [ValidateSet("INFO","WARN","ERROR","SUCCESS")][string]$Level = "INFO")
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $colorMap = @{ INFO = "White"; WARN = "Yellow"; ERROR = "Red"; SUCCESS = "Green" }
+        Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $colorMap[$Level]
     }
 }
 

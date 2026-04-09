@@ -1,5 +1,13 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+
+# Import common module (may not exist in WinPE/target environment, so wrap in try/catch)
+try {
+    Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force -ErrorAction Stop
+} catch {
+    # Module not available in target environment, logging initialized below
+}
+
 <#
 .SYNOPSIS
     Shrinks Windows partition by 105 GB, creates 15 GB Recovery partition, leaves rest as unallocated for Samsung NVMe overprovisioning.
@@ -29,20 +37,10 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+
+# Initialize centralized logging (or use local fallback)
 $logFile = "C:\ProgramData\Winhance\Unattend\Logs\disk-config.log"
-
-function Write-Log {
-    param([string]$Message, [ValidateSet("INFO","SUCCESS","WARNING","ERROR")][string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp] [$Level] $Message"
-    Write-Host $entry -ForegroundColor $(switch($Level) { "ERROR" { "Red" } "WARNING" { "Yellow" } "SUCCESS" { "Green" } default { "White" }})
-
-    $logDir = Split-Path $logFile -Parent
-    if (-not (Test-Path $logDir)) {
-        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-    }
-    Add-Content -Path $logFile -Value $entry -Encoding UTF8
-}
+Initialize-Logging -LogPath $logFile
 
 Write-Log "=========================================="
 Write-Log "Disk Partition Resize Script Started"
@@ -55,6 +53,24 @@ try {
     if (-not $isAdmin) {
         Write-Log "ERROR: This script must be run as Administrator" "ERROR"
         exit 1
+    }
+
+    # Idempotency guard: skip if Recovery partition already exists on the target disk.
+    # This happens when the modular build (GamerOS-3Disk layout) already created the
+    # full partition structure during windowsPE — no shrink is needed.
+    $recoveryTypeId = "de94bba4-06d1-4d40-a16a-bfd50179d6ac"
+    $existingRecovery = Get-Partition -DiskNumber $DiskNumber -ErrorAction SilentlyContinue |
+        Where-Object { $_.GptType -and $_.GptType -eq "{$recoveryTypeId}" }
+    if (-not $existingRecovery) {
+        # Also check by partition count: GamerOS-3Disk layout creates 5 partitions on Disk 2
+        $partCount = (Get-Partition -DiskNumber $DiskNumber -ErrorAction SilentlyContinue).Count
+        if ($partCount -ge 4) {
+            Write-Log "Disk $DiskNumber already has $partCount partitions (Recovery/OP layout detected). Skipping shrink." "INFO"
+            exit 0
+        }
+    } else {
+        Write-Log "Recovery partition already exists on Disk $DiskNumber. Skipping shrink (layout already applied)." "INFO"
+        exit 0
     }
 
     # Get target disk by DeviceId
@@ -172,11 +188,12 @@ try {
     }
 
     $opGB = [math]::Round($opMB / 1024, 1)
+    $newWinSizeGB = [math]::Round($newWinSizeMB/1024, 1)
     Write-Log "==========================================" "SUCCESS"
     Write-Log "Disk Partition Resize Complete" "SUCCESS"
-    Write-Log "  C: = ${newWinSizeMB} MB ($([math]::Round($newWinSizeMB/1024, 1)) GB)" "SUCCESS"
-    Write-Log "  Recovery = ${recoveryMB} MB (${RecoveryGB} GB, hidden)" "SUCCESS"
-    Write-Log "  Unallocated (Samsung OP) = ${opMB} MB (~${opGB} GB)" "SUCCESS"
+    Write-Log "  C: = $newWinSizeMB MB ($newWinSizeGB GB)" "SUCCESS"
+    Write-Log "  Recovery = $recoveryMB MB ($RecoveryGB GB, hidden)" "SUCCESS"
+    Write-Log "  Unallocated (Samsung OP) = $opMB MB (~$opGB GB)" "SUCCESS"
     Write-Log "==========================================" "SUCCESS"
 }
 catch {

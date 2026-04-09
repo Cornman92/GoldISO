@@ -1,0 +1,30 @@
+*.iso
+*.log
+*.msu
+*.cab
+*.msixbundle
+*.appx
+*.appinstaller
+*.exe
+*.dll
+*.zip
+.editorconfig
+node_modules/
+.claude/
+.vscode/
+Applications/
+Logs/
+Drivers/
+Packages/
+Tests/Results/
+Artifacts/
+
+# AI agent instruction files (for development tooling, not part of the project)
+.ai/
+
+# Runtime artifacts
+Config/SettingsMigration/Settings-Migration-*/
+
+# direnv local overrides
+.envrc.local
+.envrc.override

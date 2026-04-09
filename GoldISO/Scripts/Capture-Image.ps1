@@ -1,5 +1,13 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
+
+# Import common module (may not exist in WinPE, so wrap in try/catch)
+try {
+    Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force -ErrorAction Stop
+} catch {
+    # Module not available in WinPE, define minimal local logging
+}
+
 <#
 .SYNOPSIS
     Captures a Windows image from the current system in WinPE.
@@ -27,17 +35,25 @@ param(
     [int]$TargetDisk = 2,
     [string]$CapturePath = "",
     [bool]$MoveToUSB = $false,
-    [string]$USBDrive = $null
+    [string]$USBDrive = $null,
+
+    # Resume an interrupted capture if a checkpoint file is found alongside CapturePath.
+    # If the WIM file already exists and the checkpoint shows "Started" (incomplete),
+    # the script will delete the partial WIM and restart fresh.
+    [switch]$Resume
 )
 
 $ErrorActionPreference = "Stop"
 $StartTime = Get-Date
 
-function Write-Log {
-    param([string]$Message, [ValidateSet("INFO","WARN","ERROR","SUCCESS")][string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $colorMap = @{ INFO = "White"; WARN = "Yellow"; ERROR = "Red"; SUCCESS = "Green" }
-    Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $colorMap[$Level]
+# Define local Write-Log if module not loaded (for WinPE compatibility)
+if (-not (Get-Command Write-GoldISOLog -ErrorAction SilentlyContinue)) {
+    function Write-Log {
+        param([string]$Message, [ValidateSet("INFO","WARN","ERROR","SUCCESS")][string]$Level = "INFO")
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $colorMap = @{ INFO = "White"; WARN = "Yellow"; ERROR = "Red"; SUCCESS = "Green" }
+        Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $colorMap[$Level]
+    }
 }
 
 function Find-WindowsPartition {
@@ -50,8 +66,10 @@ function Find-WindowsPartition {
             return $null
         }
         
+        # Minimum partition size to qualify as Windows installation (50GB)
+        $minWindowsPartitionSize = 50GB
         $partitions = Get-Partition -DiskNumber $DiskNumber | Where-Object { 
-            $_.Type -eq "Basic" -and $_.Size -gt 50GB 
+            $_.Type -eq "Basic" -and $_.Size -gt $minWindowsPartitionSize 
         } | Sort-Object Size -Descending
         
         if (-not $partitions) {
@@ -126,6 +144,30 @@ Write-Host ""
 Write-Log "Starting capture process..."
 Write-Log "Target Disk: $TargetDisk"
 Write-Log "Capture Path: $CapturePath"
+
+# Handle resume: inspect existing checkpoint
+if ($CapturePath) {
+    $checkpointFile = "$CapturePath.checkpoint.json"
+    if (Test-Path $checkpointFile) {
+        $existingCheckpoint = Get-Content $checkpointFile -Raw | ConvertFrom-Json
+        if ($existingCheckpoint.Status -eq "Completed") {
+            Write-Log "Checkpoint shows capture already COMPLETED at $($existingCheckpoint.EndTime). Use a different CapturePath to re-capture." "WARN"
+            exit 0
+        } elseif ($existingCheckpoint.Status -eq "Started") {
+            if ($Resume) {
+                Write-Log "Incomplete capture detected (started $($existingCheckpoint.StartTime)). Restarting fresh..." "WARN"
+                if (Test-Path $CapturePath) {
+                    Remove-Item $CapturePath -Force
+                    Write-Log "Removed partial WIM: $CapturePath"
+                }
+                Remove-Item $checkpointFile -Force -ErrorAction SilentlyContinue
+            } else {
+                Write-Log "Incomplete capture found. Pass -Resume to restart from scratch, or delete $checkpointFile manually." "WARN"
+                exit 1
+            }
+        }
+    }
+}
 
 $isWinPE = Test-Path "X:\Windows\System32\WinPE.exe" -ErrorAction SilentlyContinue
 if (-not $isWinPE) {
@@ -205,6 +247,18 @@ Write-Log "This may take 10-30 minutes depending on system size..."
 Write-Log "Source: $windowsDrive"
 Write-Log "Destination: $CapturePath"
 
+# Checkpoint: record start so interrupted captures can be detected
+$checkpointPath = "$CapturePath.checkpoint.json"
+$checkpoint = @{
+    Status        = "Started"
+    SourceDrive   = $windowsDrive
+    CapturePath   = $CapturePath
+    StartTime     = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+    TargetDisk    = $TargetDisk
+}
+$checkpoint | ConvertTo-Json | Set-Content $checkpointPath -Encoding UTF8
+Write-Log "Checkpoint written: $checkpointPath"
+
 try {
     $dismArgs = @(
         "/Capture-Image",
@@ -214,22 +268,67 @@ try {
         "/Description:`"Captured $(Get-Date -Format 'yyyy-MM-dd HH:mm')`"",
         "/Compress:maximum"
     )
-    
-    Write-Log "Running: dism.exe $dismArgs"
-    $dismProcess = Start-Process -FilePath "dism.exe" -ArgumentList $dismArgs -Wait -PassThru -NoNewWindow
-    
+
+    # Redirect DISM stdout to a temp file so we can parse progress in real-time
+    $dismOutputFile = Join-Path $env:TEMP "dism-capture-$([System.IO.Path]::GetRandomFileName()).log"
+    Write-Log "Running: dism.exe $($dismArgs -join ' ')"
+
+    $dismProcess = Start-Process -FilePath "dism.exe" `
+        -ArgumentList $dismArgs `
+        -RedirectStandardOutput $dismOutputFile `
+        -PassThru -NoNewWindow
+
+    $lastPercent = -1
+    while (-not $dismProcess.HasExited) {
+        Start-Sleep -Milliseconds 500
+        if (Test-Path $dismOutputFile) {
+            # DISM progress lines look like: [=====               34.5%             ]
+            $lines = Get-Content $dismOutputFile -ErrorAction SilentlyContinue
+            if ($lines) {
+                $pctLine = $lines | Select-String -Pattern '(\d+\.?\d*)\s*%' | Select-Object -Last 1
+                if ($pctLine) {
+                    $pct = [int]([double]($pctLine.Matches[0].Groups[1].Value))
+                    if ($pct -ne $lastPercent) {
+                        Write-Progress -Activity "Capturing Windows Image" `
+                            -Status "$pct% complete — elapsed $([math]::Round(((Get-Date) - $StartTime).TotalMinutes, 1)) min" `
+                            -PercentComplete ([math]::Min($pct, 99))
+                        $lastPercent = $pct
+                    }
+                }
+            }
+        }
+    }
+    Write-Progress -Activity "Capturing Windows Image" -Completed
+
+    # Append DISM output to the main log
+    if (Test-Path $dismOutputFile) {
+        Get-Content $dismOutputFile | ForEach-Object { Write-Log $_ }
+        Remove-Item $dismOutputFile -Force -ErrorAction SilentlyContinue
+    }
+
     if ($dismProcess.ExitCode -ne 0) {
+        $checkpoint.Status = "Failed"
+        $checkpoint.FailReason = "DISM exit code $($dismProcess.ExitCode)"
+        $checkpoint | ConvertTo-Json | Set-Content $checkpointPath -Encoding UTF8
         Write-Log "DISM capture failed with exit code $($dismProcess.ExitCode)" "ERROR"
         exit 1
     }
-    
+
+    # Mark checkpoint complete
+    $checkpoint.Status    = "Completed"
+    $checkpoint.EndTime   = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+    $checkpoint | ConvertTo-Json | Set-Content $checkpointPath -Encoding UTF8
+
     Write-Log "Image captured successfully" "SUCCESS"
-    
+
     $wimSize = (Get-Item $CapturePath).Length
     Write-Log "Captured WIM size: $([math]::Round($wimSize / 1MB, 2)) MB"
 }
 catch {
     $errMsg = $_.Exception.Message
+    $checkpoint.Status    = "Failed"
+    $checkpoint.FailReason = $errMsg
+    $checkpoint | ConvertTo-Json | Set-Content $checkpointPath -Encoding UTF8 -ErrorAction SilentlyContinue
     Write-Log "Error during capture: $errMsg" "ERROR"
     exit 1
 }

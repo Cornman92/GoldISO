@@ -1,7 +1,21 @@
 {
-  "_version": "1.0",
+  "_version": "1.1",
   "_lastUpdated": "2026-04-08",
-  "description": "AppX debloat list for GoldISO build. These packages will be removed during the build.",
+  "description": "AppX debloat list for GoldISO build. These packages will be removed during the build. Includes consolidated blacklist from bloatware-blacklist.json.",
+  "_consolidatedFrom": "bloatware-blacklist.json",
+  "blacklist": [
+    "Microsoft.WindowsFeedbackHub",
+    "Microsoft.MicrosoftSolitaireCollection",
+    "Microsoft.MixedReality.Portal",
+    "Microsoft.ZuneVideo",
+    "Microsoft.ZuneMusic",
+    "Microsoft.People",
+    "Microsoft.Getstarted",
+    "Microsoft.Office.OneNote",
+    "Microsoft.BingNews",
+    "Microsoft.BingWeather",
+    "Microsoft.XboxSpeechToTextOverlay"
+  ],
   "packages": [
     {
       "name": "Microsoft.WindowsFeedbackHub",

@@ -18,16 +18,6 @@
       "path": "System devices",
       "description": "Intel MEI and system device drivers",
       "enabled": true
-    },
-    {
-      "path": "Sound, video and game controllers",
-      "description": "Realtek audio and NVIDIA HD audio",
-      "enabled": true
-    },
-    {
-      "path": "Software components",
-      "description": "Realtek audio components and Intel utilities",
-      "enabled": true
     }
   ],
   "postInstall": [
@@ -42,6 +32,41 @@
       "infPath": "Universal Serial Bus controllers\\G403 HERO_1.1.77.5292\\logi_lamparray_usb.inf",
       "method": "pnputil",
       "note": "Installed post-boot via FirstLogonCommands"
+    },
+    {
+      "path": "Sound, video and game controllers",
+      "description": "Realtek audio, NVIDIA HD audio, monitor sound, audio endpoints",
+      "method": "pnputil-batch",
+      "note": "All audio/video/game controller drivers installed post-boot",
+      "enabled": true
+    },
+    {
+      "path": "Audio Processing Objects (APOs)",
+      "description": "Dolby, DTS, Nahimic, Creative audio processing drivers",
+      "method": "pnputil-batch",
+      "note": "APO drivers installed post-boot for better hardware detection",
+      "enabled": true
+    },
+    {
+      "path": "Software components",
+      "description": "Realtek audio components, Intel utilities, driver software components",
+      "method": "pnputil-batch",
+      "note": "Software component drivers installed post-boot",
+      "enabled": true
+    },
+    {
+      "path": "Extensions",
+      "description": "Driver extension packages and helper drivers",
+      "method": "pnputil-batch",
+      "note": "Extension drivers installed post-boot",
+      "enabled": true
+    },
+    {
+      "path": "Monitors",
+      "description": "Monitor drivers including audio/sound support",
+      "method": "pnputil-batch",
+      "note": "Monitor drivers installed post-boot for proper hardware detection",
+      "enabled": true
     }
   ]
 }

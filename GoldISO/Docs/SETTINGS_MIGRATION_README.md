@@ -20,11 +20,8 @@ The Settings Migration System captures your current Windows system configuration
 ### Export and Build ISO with One Command
 
 ```powershell
-# Navigate to Scripts directory
-cd C:\Users\C-Man\GoldISO\Scripts
-
-# Run the complete workflow
-.\Build-ISO-With-Settings.ps1
+# From the GoldISO project root
+.\Scripts\Build-ISO-With-Settings.ps1
 ```
 
 ### What Happens:
