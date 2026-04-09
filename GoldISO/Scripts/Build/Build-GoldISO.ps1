@@ -211,7 +211,11 @@ param(
     
     # Disk Layout Selection (V3.2)
     [ValidateSet("GamerOS-3Disk", "SingleDisk-DevGaming", "SingleDisk-Generic")]
-    [string]$DiskLayout = "GamerOS-3Disk"
+    [string]$DiskLayout = "GamerOS-3Disk",
+
+    # Build Optimization (V3.5)
+    [switch]$SkipChecksum,
+    [switch]$VerifyISO
 )
 
 # Initialize project root variable for use throughout the script
@@ -1175,12 +1179,27 @@ function Build-ISOImage {
         $sizeGB = [math]::Round((Get-Item $OutputPath).Length / 1GB, 2)
         Write-Log "ISO created: $OutputPath ($sizeGB GB)" "SUCCESS"
         
-        # Generate SHA256 checksum
-        Write-Log "Generating SHA256 checksum..."
-        $checksumPath = $OutputPath + ".sha256"
-        $hash = Get-FileHash $OutputPath -Algorithm SHA256
-        "$($hash.Hash)  $([System.IO.Path]::GetFileName($OutputPath))" | Set-Content $checksumPath -Encoding UTF8
-        Write-Log "Checksum saved: $checksumPath" "SUCCESS"
+        # Generate SHA256 checksum (unless skipped)
+        if (-not $SkipChecksum) {
+            Write-Log "Generating SHA256 checksum..."
+            $checksumPath = $OutputPath + ".sha256"
+            $hash = Get-FileHash $OutputPath -Algorithm SHA256
+            "$($hash.Hash)  $([System.IO.Path]::GetFileName($OutputPath))" | Set-Content $checksumPath -Encoding UTF8
+            Write-Log "Checksum saved: $checksumPath" "SUCCESS"
+        }
+        
+        # Verify ISO integrity (optional)
+        if ($VerifyISO -and (Test-Path $checksumPath)) {
+            Write-Log "Verifying ISO integrity..."
+            $storedHash = (Get-Content $checksumPath -Raw -ErrorAction SilentlyContinue).Split(' ')[0]
+            $actualHash = (Get-FileHash $OutputPath -Algorithm SHA256).Hash
+            if ($storedHash -eq $actualHash) {
+                Write-Log "ISO integrity verified" "SUCCESS"
+            } else {
+                Write-Log "ISO integrity check FAILED - hash mismatch!" "ERROR"
+                return $false
+            }
+        }
         
         return $true
     }
