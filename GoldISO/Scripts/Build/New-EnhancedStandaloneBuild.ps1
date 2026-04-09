@@ -538,6 +538,10 @@ try {
     
     # Mount and copy ISO
     $driveLetter = Mount-GoldISOImage -ISOPath $SourceISO
+    if (-not $driveLetter) {
+        Write-GoldISOLog -Message "Failed to mount source ISO" -Level "ERROR"
+        exit 1
+    }
     Copy-GoldISOContents -SourceDrive $driveLetter -DestDir $isoContentDir
     Dismount-GoldISOImage -ISOPath $SourceISO
     

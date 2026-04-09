@@ -12,6 +12,7 @@
 #>
 
 BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot "TestHelpers.psm1") -Force
     $script:ProjectRoot = Join-Path $PSScriptRoot ".."
     $script:ScriptsDir = Join-Path $script:ProjectRoot "Scripts"
 }
@@ -19,19 +20,19 @@ BeforeAll {
 Describe "VM Test Infrastructure" {
     Context "VM Creation Scripts" {
         It "New-TestVM.ps1 exists" {
-            $vmScript = Join-Path $script:ScriptsDir "New-TestVM.ps1"
+            $vmScript = Find-ScriptPath "New-TestVM.ps1"
             Test-Path $vmScript | Should -Be $true
         }
 
         It "New-TestVM.ps1 has valid syntax" {
-            $vmScript = Join-Path $script:ScriptsDir "New-TestVM.ps1"
+            $vmScript = Find-ScriptPath "New-TestVM.ps1"
             $errors = $null
             $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $vmScript -Raw), [ref]$errors)
             $errors.Count | Should -Be 0
         }
 
         It "New-TestVM.ps1 has required parameters" {
-            $vmScript = Join-Path $script:ScriptsDir "New-TestVM.ps1"
+            $vmScript = Find-ScriptPath "New-TestVM.ps1"
             $content = Get-Content $vmScript -Raw
             $content | Should -Match '\[string\]\$VMName'
             $content | Should -Match '\[int\]\$VHDSizeGB'
@@ -42,12 +43,12 @@ Describe "VM Test Infrastructure" {
 
     Context "VM Performance Scripts" {
         It "Test-VMPerformance.ps1 exists" {
-            $perfScript = Join-Path $script:ScriptsDir "Test-VMPerformance.ps1"
+            $perfScript = Find-ScriptPath "Test-VMPerformance.ps1"
             Test-Path $perfScript | Should -Be $true
         }
 
         It "Test-VMPerformance.ps1 has valid syntax" {
-            $perfScript = Join-Path $script:ScriptsDir "Test-VMPerformance.ps1"
+            $perfScript = Find-ScriptPath "Test-VMPerformance.ps1"
             $errors = $null
             $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $perfScript -Raw), [ref]$errors)
             $errors.Count | Should -Be 0
@@ -58,13 +59,13 @@ Describe "VM Test Infrastructure" {
 Describe "VM Pipeline Integration" {
     Context "Start-BuildPipeline VM Support" {
         It "Start-BuildPipeline.ps1 has -DeployToVM parameter" {
-            $pipelineScript = Join-Path $script:ScriptsDir "Start-BuildPipeline.ps1"
+            $pipelineScript = Find-ScriptPath "Start-BuildPipeline.ps1"
             $content = Get-Content $pipelineScript -Raw
             $content | Should -Match '\[switch\]\$DeployToVM'
         }
 
         It "Start-BuildPipeline.ps1 references New-TestVM" {
-            $pipelineScript = Join-Path $script:ScriptsDir "Start-BuildPipeline.ps1"
+            $pipelineScript = Find-ScriptPath "Start-BuildPipeline.ps1"
             $content = Get-Content $pipelineScript -Raw
             $content | Should -Match 'New-TestVM'
         }
@@ -89,7 +90,7 @@ Describe "VM Test Execution" {
 
     Context "VM Network Switch" {
         It "Documents Default Switch requirement" {
-            $newVMScript = Join-Path $script:ScriptsDir "New-TestVM.ps1"
+            $newVMScript = Find-ScriptPath "New-TestVM.ps1"
             $content = Get-Content $newVMScript -Raw
             $content | Should -Match 'Default Switch'
         }

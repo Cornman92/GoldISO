@@ -7,6 +7,7 @@
 #>
 
 BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot "TestHelpers.psm1") -Force
     $script:ProjectRoot = Split-Path $PSScriptRoot -Parent
     $script:ScriptsDir = Join-Path $ProjectRoot "Scripts"
     $script:ModulePath = Join-Path $ScriptsDir "Modules\GoldISO-Common.psm1"
@@ -126,8 +127,9 @@ Describe "Script Dependencies" {
         )
 
         foreach ($script in $requiredScripts) {
-            $scriptPath = Join-Path $ScriptsDir $script
-            $scriptPath | Should -Exist -Because "$script is required"
+            $scriptPath = Find-ScriptPath $script
+            $scriptPath | Should -Not -BeNullOrEmpty -Because "$script is required"
+            $scriptPath | Should -Exist
         }
     }
 

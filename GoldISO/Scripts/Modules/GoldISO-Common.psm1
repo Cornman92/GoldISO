@@ -11,6 +11,7 @@
 # Script-level variables
 $script:LogFile = $null
 $script:LogInitialized = $false
+$script:DebugLoggingEnabled = $false
 $script:SystemDataDir = "C:\ProgramData\GoldISO"
 $script:CentralLogDir = Join-Path $script:SystemDataDir "Logs"
 
@@ -967,10 +968,15 @@ function Mount-GoldISOWIM {
     
     if (Test-Path $MountPath) {
         # Check if already mounted
-        $mountedImages = Get-WindowsImage -Mounted | Where-Object { $_.Path -eq $MountPath }
-        if ($mountedImages) {
-            Write-GoldISOLog -Message "WIM already mounted at $MountPath" -Level "WARN"
-            return $true
+        try {
+            $mountedImages = Get-WindowsImage -Mounted -ErrorAction Stop | Where-Object { $_.Path -eq $MountPath }
+            if ($mountedImages) {
+                Write-GoldISOLog -Message "WIM already mounted at $MountPath" -Level "WARN"
+                return $true
+            }
+        }
+        catch {
+            Write-GoldISOLog -Message "Warning: Could not query mounted images (DISM service may be unavailable): $_" -Level "WARN"
         }
     } else {
         New-Item -ItemType Directory -Path $MountPath -Force | Out-Null
@@ -1008,28 +1014,24 @@ function Dismount-GoldISOWIM {
         [Parameter(Mandatory = $true)]
         [string]$MountPath,
         
-        [switch]$Save = $true,
-        
         [switch]$Discard
     )
     
-    $mountedImage = Get-WindowsImage -Mounted | Where-Object { $_.Path -eq $MountPath }
+    $mountedImage = Get-WindowsImage -Mounted -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $MountPath }
     if (-not $mountedImage) {
         Write-GoldISOLog -Message "No WIM mounted at $MountPath" -Level "WARN"
         return $true
     }
     
     try {
-        $shouldSave = $Save -and -not $Discard
-        
-        if ($shouldSave) {
-            Write-GoldISOLog -Message "Dismounting WIM and saving changes..." -Level "INFO"
-            Dismount-WindowsImage -Path $MountPath -Save -ErrorAction Stop | Out-Null
-            Write-GoldISOLog -Message "WIM unmounted and saved" -Level "SUCCESS"
-        } else {
+        if ($Discard) {
             Write-GoldISOLog -Message "Dismounting WIM and discarding changes..." -Level "INFO"
             Dismount-WindowsImage -Path $MountPath -Discard -ErrorAction SilentlyContinue | Out-Null
             Write-GoldISOLog -Message "WIM unmounted (discarded)" -Level "SUCCESS"
+        } else {
+            Write-GoldISOLog -Message "Dismounting WIM and saving changes..." -Level "INFO"
+            Dismount-WindowsImage -Path $MountPath -Save -ErrorAction Stop | Out-Null
+            Write-GoldISOLog -Message "WIM unmounted and saved" -Level "SUCCESS"
         }
         return $true
     }
@@ -1081,6 +1083,9 @@ function Export-GoldISOWIM {
             -DestinationImagePath $DestWIM -CompressionType $Compression `
             -ErrorAction Stop | Out-Null
         
+        if (-not (Test-Path $DestWIM)) {
+            throw "Export failed - destination WIM not created"
+        }
         $wimSize = [math]::Round((Get-Item $DestWIM).Length / 1GB, 2)
         Write-GoldISOLog -Message "WIM exported: $DestWIM ($wimSize GB)" -Level "SUCCESS"
         return $true
@@ -1217,7 +1222,7 @@ function Copy-GoldISOContents {
         [Parameter(Mandatory = $true)]
         [string]$DestDir,
         
-        [switch]$VerifyWIM = $true
+        [switch]$SkipWIMVerification
     )
     
     $drivePath = "$SourceDrive`:\"
@@ -1233,8 +1238,12 @@ function Copy-GoldISOContents {
     try {
         Write-GoldISOLog -Message "Copying ISO contents from ${SourceDrive}:\ to $DestDir..." -Level "INFO"
         robocopy $drivePath $DestDir /E /R:3 /W:5 /NP /NFL /NDL | Out-Null
+        # Robocopy exit codes: 0-7 = success, 8+ = error
+        if ($LASTEXITCODE -ge 8) {
+            throw "Robocopy failed with exit code $LASTEXITCODE"
+        }
         
-        if ($VerifyWIM) {
+        if (-not $SkipWIMVerification) {
             $wimPath = Join-Path $DestDir "sources\install.wim"
             if (Test-Path $wimPath) {
                 $sizeGB = [math]::Round((Get-Item $wimPath).Length / 1GB, 2)
@@ -1316,7 +1325,10 @@ function New-GoldISOImage {
     
     # Ensure output directory exists
     $outputDir = Split-Path $OutputPath -Parent
-    if ($outputDir -and -not (Test-Path $outputDir)) {
+    if ([string]::IsNullOrWhiteSpace($outputDir)) {
+        $outputDir = "."
+    }
+    if (-not (Test-Path $outputDir)) {
         New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
     }
     
@@ -1377,6 +1389,12 @@ function Resolve-OscdimgPath {
     return $null
 }
 
+function Set-GoldISODebugLogging {
+    [CmdletBinding()]
+    param([bool]$Enabled = $true)
+    $script:DebugLoggingEnabled = $Enabled
+}
+
 # Export all functions
 Export-ModuleMember -Function @(
     "Initialize-Logging",
@@ -1398,6 +1416,7 @@ Export-ModuleMember -Function @(
     "Invoke-GoldISOErrorThrow",
     "Register-GoldISOCleanup",
     "Invoke-GoldISOCleanup",
+    "Set-GoldISODebugLogging",
     "Initialize-Checkpoint",
     "Test-PhaseComplete",
     "Save-Checkpoint",

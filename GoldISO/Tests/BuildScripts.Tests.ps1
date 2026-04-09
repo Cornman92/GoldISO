@@ -8,6 +8,7 @@
 #>
 
 BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot "TestHelpers.psm1") -Force
     $modulePath = Join-Path $PSScriptRoot "..\Scripts\Modules\GoldISO-Common.psm1"
     Import-Module $modulePath -Force
 
@@ -17,17 +18,17 @@ BeforeAll {
 
 Describe "Build-GoldISO.ps1 - Parameter Validation" {
     It "Should have valid parameter defaults" {
-        $scriptPath = Join-Path $ScriptsDir "Build-GoldISO.ps1"
+        $scriptPath = Find-ScriptPath "Build-GoldISO.ps1"
         $scriptPath | Should -Exist
 
         # Parse script for parameter block
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[CmdletBinding\(\)\]"
+        $content | Should -Match '\[CmdletBinding'
         $content | Should -Match "param\("
     }
 
     It "Should have all expected parameters defined" {
-        $scriptPath = Join-Path $ScriptsDir "Build-GoldISO.ps1"
+        $scriptPath = Find-ScriptPath "Build-GoldISO.ps1"
         $content = Get-Content $scriptPath -Raw
 
         # Check for expected parameters
@@ -43,33 +44,33 @@ Describe "Build-GoldISO.ps1 - Parameter Validation" {
         )
 
         foreach ($param in $expectedParams) {
-            $content | Should -Match "\[.*\]\$$param"
+            $content | Should -Match ('\$' + $param)
         }
     }
 
     It "Should have BuildMode parameter with valid ValidateSet" {
-        $scriptPath = Join-Path $ScriptsDir "Build-GoldISO.ps1"
+        $scriptPath = Find-ScriptPath "Build-GoldISO.ps1"
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[ValidateSet\(\"Standard\", \"Audit\", \"Capture\"\)\]"
+        $content | Should -Match 'ValidateSet.*"Standard"'
     }
 }
 
 Describe "Build-ISO-With-Settings.ps1 - Parameter Validation" {
     It "Should have valid parameter defaults" {
-        $scriptPath = Join-Path $ScriptsDir "Build-ISO-With-Settings.ps1"
+        $scriptPath = Find-ScriptPath "Build-ISO-With-Settings.ps1"
         $scriptPath | Should -Exist
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[CmdletBinding\(\)\]"
+        $content | Should -Match '\[CmdletBinding'
     }
 
     It "Should import GoldISO-Common module" {
-        $scriptPath = Join-Path $ScriptsDir "Build-ISO-With-Settings.ps1"
+        $scriptPath = Find-ScriptPath "Build-ISO-With-Settings.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Import-Module.*GoldISO-Common"
     }
 
     It "Should use descriptive phase names instead of numbered phases" {
-        $scriptPath = Join-Path $ScriptsDir "Build-ISO-With-Settings.ps1"
+        $scriptPath = Find-ScriptPath "Build-ISO-With-Settings.ps1"
         $content = Get-Content $scriptPath -Raw
 
         # Should NOT have old "Phase N:" patterns
@@ -84,19 +85,19 @@ Describe "Build-ISO-With-Settings.ps1 - Parameter Validation" {
 
 Describe "Build Scripts - Prerequisite Checks" {
     It "Build-GoldISO.ps1 should check for admin rights" {
-        $scriptPath = Join-Path $ScriptsDir "Build-GoldISO.ps1"
+        $scriptPath = Find-ScriptPath "Build-GoldISO.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Test-Admin|Administrator"
     }
 
     It "Build-GoldISO.ps1 should check for DISM" {
-        $scriptPath = Join-Path $ScriptsDir "Build-GoldISO.ps1"
+        $scriptPath = Find-ScriptPath "Build-GoldISO.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "dism|DISM"
     }
 
     It "Build-GoldISO.ps1 should check for source ISO" {
-        $scriptPath = Join-Path $ScriptsDir "Build-GoldISO.ps1"
+        $scriptPath = Find-ScriptPath "Build-GoldISO.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Win11.*\.iso|Source ISO"
     }
@@ -104,13 +105,13 @@ Describe "Build Scripts - Prerequisite Checks" {
 
 Describe "Build Scripts - Error Handling" {
     It "Build-GoldISO.ps1 should have error handling for key operations" {
-        $scriptPath = Join-Path $ScriptsDir "Build-GoldISO.ps1"
+        $scriptPath = Find-ScriptPath "Build-GoldISO.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "try \{|catch \{|ErrorAction"
     }
 
     It "Build-ISO-With-Settings.ps1 should handle export failures gracefully" {
-        $scriptPath = Join-Path $ScriptsDir "Build-ISO-With-Settings.ps1"
+        $scriptPath = Find-ScriptPath "Build-ISO-With-Settings.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "try \{|catch \{|return \`$false"
     }

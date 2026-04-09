@@ -10,63 +10,65 @@
     Run with: Invoke-Pester -Path .\ProtectLetters.Tests.ps1
 #>
 
-$ScriptPath = Join-Path $PSScriptRoot "..\Config\Unattend\Modules\Scripts\ProtectLetters.ps1"
+BeforeAll {
+    $script:ScriptPath = Join-Path $PSScriptRoot "..\Config\Unattend\Modules\Scripts\ProtectLetters.ps1"
+}
 
-Describe "ProtectLetters.ps1 — Script Exists" {
+Describe "ProtectLetters.ps1 - Script Exists" {
     It "Script file exists" {
-        Test-Path $ScriptPath | Should -Be $true
+        Test-Path $script:ScriptPath | Should -Be $true
     }
 
     It "Script has #Requires -Version 5.1" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match '#Requires -Version 5\.1'
     }
 
     It "Script has [CmdletBinding()]" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match '\[CmdletBinding\(\)\]'
     }
 
     It "Script accepts -ProtectedLetters parameter" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match 'ProtectedLetters'
     }
 
     It "Script references Set-Partition for reassignment" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match 'Set-Partition'
     }
 }
 
-Describe "ProtectLetters.ps1 — Default Protected Set" {
+Describe "ProtectLetters.ps1 - Default Protected Set" {
     It "Default protected letters include D" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match "'D'"
     }
 
     It "Default protected letters include E" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match "'E'"
     }
 
     It "Default protected letters include R (RAM disk)" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match "'R'"
     }
 
     It "Default protected letters include C (Windows)" {
-        $content = Get-Content $ScriptPath -Raw
+        $content = Get-Content $script:ScriptPath -Raw
         $content | Should -Match "'C'"
     }
 }
 
-Describe "ProtectLetters.ps1 — Logic (mocked)" {
+Describe "ProtectLetters.ps1 - Logic (mocked)" {
     BeforeAll {
         # Dot-source is hard because script runs code at root level.
         # Instead we test the logic by verifying the script's structure handles
         # the reassignment path using InModuleScope patterns via mock injection.
         # These are integration-style structural tests.
-        $script:ScriptContent = Get-Content $ScriptPath -Raw
+        $script:ScriptContent = Get-Content $script:ScriptPath -Raw
     }
 
     It "Script calls Get-Volume to find removable drives" {
@@ -98,13 +100,13 @@ Describe "ProtectLetters.ps1 — Logic (mocked)" {
     }
 }
 
-Describe "ProtectLetters.ps1 — Parameter Invocation" {
+Describe "ProtectLetters.ps1 - Parameter Invocation" {
     It "Script can be dot-sourced with -WhatIf equivalent (dry check via -ProtectedLetters override)" {
         # Validate the script's parameter block can be loaded via AST inspection
         $tokens = $null
         $parseErrors = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile(
-            $ScriptPath,
+            $script:ScriptPath,
             [ref]$tokens,
             [ref]$parseErrors
         )

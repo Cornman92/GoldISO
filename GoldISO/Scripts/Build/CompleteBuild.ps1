@@ -541,7 +541,7 @@ try {
     Write-Log "=========================================="
     
     # Check admin
-    Test-Admin
+    Test-GoldISOAdmin -ExitIfNotAdmin
     
     # Setup paths
     $sourceISO = Join-Path $script:ProjectRoot "Win11-25H2x64v2.iso"

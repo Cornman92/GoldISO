@@ -20,8 +20,8 @@
 .PARAMETER Categorize
     Auto-categorize apps based on known patterns and heuristics.
 
-.PARAMETER GenerateReport
-    Generate a text summary report. Default: true
+.PARAMETER NoReport
+    Skip generating the text summary report. Default: false (report is generated)
 
 .EXAMPLE
     .\Scan-InstalledApps.ps1 -OutputPath "C:\temp\my-apps" -IncludeWinget -Categorize
@@ -37,8 +37,15 @@ param(
     [string]$OutputPath = "C:\temp\gwig-scan",
     [switch]$IncludeWinget,
     [switch]$Categorize,
-    [switch]$GenerateReport = $true
+    [switch]$NoReport
 )
+
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+
+# Initialize logging
+$logPath = Join-Path $env:TEMP "Scan-InstalledApps-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+Initialize-Logging -LogPath $logPath
 
 #region Configuration
 
@@ -192,8 +199,8 @@ function Get-Win32Apps {
                     InstallLocation = $props.InstallLocation
                     UninstallString = $props.UninstallString
                     IsInteractive = Test-IsInteractiveApp -AppName $props.DisplayName
-                    Category = if ($Categorize) { Get-AppCategory -AppName $props.DisplayName } else $null
-                    PotentialWingetId = if ($IncludeWinget) { Find-WingetId -AppName $props.DisplayName } else $null
+                    Category = if ($Categorize) { Get-AppCategory -AppName $props.DisplayName } else { $null }
+                    PotentialWingetId = if ($IncludeWinget) { Find-WingetId -AppName $props.DisplayName } else { $null }
                     Source = 'Win32'
                 }
                 
@@ -224,7 +231,7 @@ function Get-UWPApps {
                 Publisher = $_.Publisher
                 InstallLocation = $_.InstallLocation
                 IsInteractive = $true
-                Category = if ($Categorize) { Get-AppCategory -AppName $_.Name } else $null
+                Category = if ($Categorize) { Get-AppCategory -AppName $_.Name } else { $null }
                 PotentialWingetId = $null  # UWP apps use different IDs
                 Source = 'UWP'
             }
@@ -286,35 +293,35 @@ function Get-WingetApps {
 # Ensure output directory exists
 if (-not (Test-Path $OutputPath)) {
     New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
-    Write-Host "Created output directory: $OutputPath" -ForegroundColor Green
+    Write-GoldISOLog -Message "Created output directory: $OutputPath" -Level "SUCCESS"
 }
 
-Write-Host "`nScanning system for installed applications..." -ForegroundColor Cyan
-Write-Host "Output path: $OutputPath`n" -ForegroundColor Gray
+Write-GoldISOLog -Message "`nScanning system for installed applications..." -Level "INFO"
+Write-GoldISOLog -Message "Output path: $OutputPath`n" -Level "INFO"
 
 # Scan Win32 apps
-Write-Host "[1/3] Scanning Win32 applications (Add/Remove Programs)..." -ForegroundColor Yellow
+Write-GoldISOLog -Message "[1/3] Scanning Win32 applications (Add/Remove Programs)..." -Level "INFO"
 $win32Apps = Get-Win32Apps
 $interactiveWin32 = $win32Apps | Where-Object { $_.IsInteractive }
-Write-Host "    Found $($win32Apps.Count) total Win32 apps ($($interactiveWin32.Count) interactive)" -ForegroundColor White
+Write-GoldISOLog -Message "    Found $($win32Apps.Count) total Win32 apps ($($interactiveWin32.Count) interactive)" -Level "INFO"
 
 # Scan UWP apps
-Write-Host "[2/3] Scanning UWP/Store apps..." -ForegroundColor Yellow
+Write-GoldISOLog -Message "[2/3] Scanning UWP/Store apps..." -Level "INFO"
 $uwpApps = Get-UWPApps
-Write-Host "    Found $($uwpApps.Count) UWP apps" -ForegroundColor White
+Write-GoldISOLog -Message "    Found $($uwpApps.Count) UWP apps" -Level "INFO"
 
 # Scan winget apps (if requested)
 $wingetApps = @()
 if ($IncludeWinget) {
-    Write-Host "[3/3] Querying winget for installed packages..." -ForegroundColor Yellow
+    Write-GoldISOLog -Message "[3/3] Querying winget for installed packages..." -Level "INFO"
     $wingetApps = Get-WingetApps
-    Write-Host "    Found $($wingetApps.Count) winget packages" -ForegroundColor White
+    Write-GoldISOLog -Message "    Found $($wingetApps.Count) winget packages" -Level "INFO"
 }
 else {
-    Write-Host "[3/3] Skipping winget query (use -IncludeWinget to enable)" -ForegroundColor Gray
+    Write-GoldISOLog -Message "[3/3] Skipping winget query (use -IncludeWinget to enable)" -Level "INFO"
 }
 
-Write-Host "`nProcessing results..." -ForegroundColor Cyan
+Write-GoldISOLog -Message "`nProcessing results..." -Level "INFO"
 
 # Convert to GWIG winget format
 $wingetPackages = @()
@@ -370,18 +377,18 @@ $wingetManifest = [PSCustomObject]@{
 # Save winget-compatible manifest
 $wingetOutput = Join-Path $OutputPath "installed-apps-winget.json"
 $wingetManifest | ConvertTo-Json -Depth 10 | Set-Content $wingetOutput -Encoding UTF8
-Write-Host "    Saved: $wingetOutput ($($wingetPackages.Count) winget-compatible packages)" -ForegroundColor Green
+Write-GoldISOLog -Message "    Saved: $wingetOutput ($($wingetPackages.Count) winget-compatible packages)" -Level "SUCCESS"
 
 # Save Win32-only apps (non-winget)
 $win32Only = $interactiveWin32 | Where-Object { -not $_.PotentialWingetId }
 $win32Output = Join-Path $OutputPath "installed-apps-win32.json"
 $win32Only | Select-Object Name, Version, Publisher, InstallLocation, Category, Source | ConvertTo-Json -Depth 5 | Set-Content $win32Output -Encoding UTF8
-Write-Host "    Saved: $win32Output ($($win32Only.Count) Win32 apps without winget IDs)" -ForegroundColor Green
+Write-GoldISOLog -Message "    Saved: $win32Output ($($win32Only.Count) Win32 apps without winget IDs)" -Level "SUCCESS"
 
 # Save UWP apps
 $uwpOutput = Join-Path $OutputPath "installed-apps-uwp.json"
 $uwpApps | Select-Object Name, PackageName, Version, Publisher, Category | ConvertTo-Json -Depth 5 | Set-Content $uwpOutput -Encoding UTF8
-Write-Host "    Saved: $uwpOutput ($($uwpApps.Count) UWP apps)" -ForegroundColor Green
+Write-GoldISOLog -Message "    Saved: $uwpOutput ($($uwpApps.Count) UWP apps)" -Level "SUCCESS"
 
 # Save full raw data
 $fullOutput = Join-Path $OutputPath "installed-apps-full.json"
@@ -391,10 +398,10 @@ $fullOutput = Join-Path $OutputPath "installed-apps-full.json"
     UWPApps = $uwpApps
     WingetPackages = $wingetApps
 } | ConvertTo-Json -Depth 10 | Set-Content $fullOutput -Encoding UTF8
-Write-Host "    Saved: $fullOutput (complete scan data)" -ForegroundColor Green
+Write-GoldISOLog -Message "    Saved: $fullOutput (complete scan data)" -Level "SUCCESS"
 
 # Generate text report
-if ($GenerateReport) {
+if (-not $NoReport) {
     $reportOutput = Join-Path $OutputPath "app-discovery-report.txt"
     $report = @"
 ================================================================================
@@ -446,14 +453,15 @@ To merge into existing GWIG config:
 ================================================================================
 "@
     $report | Set-Content $reportOutput -Encoding UTF8
-    Write-Host "    Saved: $reportOutput" -ForegroundColor Green
+    Write-GoldISOLog -Message "    Saved: $reportOutput" -Level "SUCCESS"
 }
 
-Write-Host "`nScan complete! Results saved to: $OutputPath" -ForegroundColor Cyan
-Write-Host "`nNext steps:" -ForegroundColor Yellow
-Write-Host "  1. Review: installed-apps-winget.json" -ForegroundColor White
-Write-Host "  2. Merge into: Config/winget-packages.json" -ForegroundColor White
-Write-Host "  3. For custom installers: see installed-apps-win32.json" -ForegroundColor White
+Write-GoldISOLog -Message "`nScan complete! Results saved to: $OutputPath" -Level "INFO"
+Write-GoldISOLog -Message "`nNext steps:" -Level "INFO"
+Write-GoldISOLog -Message "  1. Review: installed-apps-winget.json" -Level "INFO"
+Write-GoldISOLog -Message "  2. Merge into: Config/winget-packages.json" -Level "INFO"
+Write-GoldISOLog -Message "  3. For custom installers: see installed-apps-win32.json" -Level "INFO"
 Write-Host ""
 
 #endregion
+

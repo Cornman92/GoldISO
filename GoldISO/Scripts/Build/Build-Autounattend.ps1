@@ -1,5 +1,14 @@
 #Requires -Version 5.1
 
+# Import common module
+$modulePath = Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1"
+if (Test-Path $modulePath) {
+    Import-Module $modulePath -Force
+}
+
+# Import common module for logging and utilities
+Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+
 <#
 .SYNOPSIS
     Builds autounattend.xml with customizable disk layout and configuration.
@@ -86,7 +95,7 @@ function Get-DiskConfiguration {
             }
         }
     } else {
-        Write-Status "No companion JSON found for layout '$DiskLayout' — skipping variable substitution" "Warning"
+        Write-Status "No companion JSON found for layout '$DiskLayout' " skipping variable substitution" "Warning"
     }
 
     return $diskContent

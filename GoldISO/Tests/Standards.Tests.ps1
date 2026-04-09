@@ -8,6 +8,7 @@
 #>
 
 BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot "TestHelpers.psm1") -Force
     $script:ProjectRoot = Split-Path $PSScriptRoot -Parent
     $script:ScriptsDir = Join-Path $ProjectRoot "Scripts"
     $script:ModulePath = Join-Path $ScriptsDir "Modules\GoldISO-Common.psm1"

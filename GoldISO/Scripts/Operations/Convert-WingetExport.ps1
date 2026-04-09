@@ -374,7 +374,7 @@ if ($MergeWithExisting -and $ExistingConfigPath) {
         $manifest = [PSCustomObject]@{
             '$schema' = $existing.'$schema'
             CreationDate = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss.fffffffZ")
-            Description = "GamerOS Full Windows — merged with $(($gwigPackages | Measure-Object).Count) additional packages"
+            Description = "GamerOS Full Windows " merged with $(($gwigPackages | Measure-Object).Count) additional packages"
             Categories = $mergedCategories
             Sources = @(
                 [PSCustomObject]@{
@@ -397,7 +397,7 @@ if (-not $MergeWithExisting -or -not $manifest) {
     $manifest = [PSCustomObject]@{
         '$schema' = "https://aka.ms/winget-packages.schema.2.0.json"
         CreationDate = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss.fffffffZ")
-        Description = "GamerOS Full Windows — converted from winget export"
+        Description = "GamerOS Full Windows " converted from winget export"
         Categories = $sortedCategories
         Sources = @(
             [PSCustomObject]@{

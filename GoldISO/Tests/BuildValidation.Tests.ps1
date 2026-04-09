@@ -14,11 +14,12 @@
 #>
 
 BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot "TestHelpers.psm1") -Force
     $script:ProjectRoot = Join-Path $PSScriptRoot ".."
     $script:PassesDir   = Join-Path $script:ProjectRoot "Config\Unattend\Passes"
     $script:ProfilesDir = Join-Path $script:ProjectRoot "Config\Unattend\Profiles"
-    $script:BuildScript = Join-Path $script:ProjectRoot "Scripts\Build-GoldISO.ps1"
-    $script:TestUnattend = Join-Path $script:ProjectRoot "Scripts\Test-UnattendXML.ps1"
+    $script:BuildScript  = Find-ScriptPath "Build-GoldISO.ps1"
+    $script:TestUnattend = Find-ScriptPath "Test-UnattendXML.ps1"
 }
 
 # ---------------------------------------------------------------------------
@@ -129,7 +130,7 @@ Describe "Test-UnattendXML.ps1 rejects malformed XML" {
 # ---------------------------------------------------------------------------
 # Unattend pass XML fragment well-formedness
 # ---------------------------------------------------------------------------
-Describe "Unattend Pass Fragments — XML Well-formedness" {
+Describe "Unattend Pass Fragments - XML Well-formedness" {
     BeforeAll {
         $passFiles = Get-ChildItem -Path $script:PassesDir -Filter "*.xml" -ErrorAction SilentlyContinue
         $script:passFiles = $passFiles

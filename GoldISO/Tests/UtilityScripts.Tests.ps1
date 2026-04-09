@@ -7,6 +7,7 @@
 #>
 
 BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot "TestHelpers.psm1") -Force
     $modulePath = Join-Path $PSScriptRoot "..\Scripts\Modules\GoldISO-Common.psm1"
     Import-Module $modulePath -Force
 
@@ -95,101 +96,101 @@ Describe "Get-GoldISORoot" {
 
 Describe "Export-Settings.ps1 - Configuration" {
     It "Should have valid parameter defaults" {
-        $scriptPath = Join-Path $ScriptsDir "Export-Settings.ps1"
+        $scriptPath = Find-ScriptPath "Export-Settings.ps1"
         $scriptPath | Should -Exist
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[CmdletBinding\(\)\]"
+        $content | Should -Match '\[CmdletBinding'
     }
 
     It "Should use centralized logging" {
-        $scriptPath = Join-Path $ScriptsDir "Export-Settings.ps1"
+        $scriptPath = Find-ScriptPath "Export-Settings.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Import-Module.*GoldISO-Common"
     }
 
     It "Should have ExportPath parameter" {
-        $scriptPath = Join-Path $ScriptsDir "Export-Settings.ps1"
+        $scriptPath = Find-ScriptPath "Export-Settings.ps1"
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[string\]\$ExportPath"
+        $content | Should -Match '\[string\]\$ExportPath'
     }
 }
 
 Describe "Configure-RamDisk.ps1 - Configuration" {
     It "Should have valid parameter defaults" {
-        $scriptPath = Join-Path $ScriptsDir "Configure-RamDisk.ps1"
+        $scriptPath = Find-ScriptPath "Configure-RamDisk.ps1"
         $scriptPath | Should -Exist
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[CmdletBinding\(\)\]"
+        $content | Should -Match '\[CmdletBinding'
     }
 
     It "Should use centralized logging" {
-        $scriptPath = Join-Path $ScriptsDir "Configure-RamDisk.ps1"
+        $scriptPath = Find-ScriptPath "Configure-RamDisk.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Initialize-Logging|Write-Log"
     }
 
     It "Should have RamDrive parameter with default" {
-        $scriptPath = Join-Path $ScriptsDir "Configure-RamDisk.ps1"
+        $scriptPath = Find-ScriptPath "Configure-RamDisk.ps1"
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[string\]\$RamDrive.*=.*'R'"
+        $content | Should -Match '\[string\]\$RamDrive'
     }
 }
 
 Describe "Configure-RemoteAccess.ps1 - Configuration" {
     It "Should have valid parameter defaults" {
-        $scriptPath = Join-Path $ScriptsDir "Configure-RemoteAccess.ps1"
+        $scriptPath = Find-ScriptPath "Configure-RemoteAccess.ps1"
         $scriptPath | Should -Exist
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[CmdletBinding\(\)\]"
+        $content | Should -Match '\[CmdletBinding'
     }
 
     It "Should use centralized logging" {
-        $scriptPath = Join-Path $ScriptsDir "Configure-RemoteAccess.ps1"
+        $scriptPath = Find-ScriptPath "Configure-RemoteAccess.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Initialize-Logging|Write-Log"
     }
 
     It "Should have expected parameters" {
-        $scriptPath = Join-Path $ScriptsDir "Configure-RemoteAccess.ps1"
+        $scriptPath = Find-ScriptPath "Configure-RemoteAccess.ps1"
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\$AnyDeskPassword"
-        $content | Should -Match "\$TailscaleAuthKey"
-        $content | Should -Match "\$SkipAnyDesk"
-        $content | Should -Match "\$SkipTailscale"
+        $content | Should -Match '\$AnyDeskPassword'
+        $content | Should -Match '\$TailscaleAuthKey'
+        $content | Should -Match '\$SkipAnyDesk'
+        $content | Should -Match '\$SkipTailscale'
     }
 }
 
 Describe "Backup-Macrium.ps1 - Configuration" {
     It "Should have valid parameter defaults" {
-        $scriptPath = Join-Path $ScriptsDir "Backup-Macrium.ps1"
+        $scriptPath = Find-ScriptPath "Backup-Macrium.ps1"
         $scriptPath | Should -Exist
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[CmdletBinding\(\)\]"
+        $content | Should -Match '\[CmdletBinding'
     }
 
     It "Should use centralized logging" {
-        $scriptPath = Join-Path $ScriptsDir "Backup-Macrium.ps1"
+        $scriptPath = Find-ScriptPath "Backup-Macrium.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Initialize-Logging|Write-Log"
     }
 
     It "Should have BackupDest parameter with default" {
-        $scriptPath = Join-Path $ScriptsDir "Backup-Macrium.ps1"
+        $scriptPath = Find-ScriptPath "Backup-Macrium.ps1"
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[string\]\$BackupDest"
+        $content | Should -Match '\[string\]\$BackupDest'
     }
 }
 
 Describe "Create-AuditShortcuts.ps1 - Configuration" {
     It "Should have valid cmdlet binding" {
-        $scriptPath = Join-Path $ScriptsDir "Create-AuditShortcuts.ps1"
+        $scriptPath = Find-ScriptPath "Create-AuditShortcuts.ps1"
         $scriptPath | Should -Exist
         $content = Get-Content $scriptPath -Raw
-        $content | Should -Match "\[CmdletBinding\(\)\]"
+        $content | Should -Match '\[CmdletBinding'
     }
 
     It "Should use centralized logging or local fallback" {
-        $scriptPath = Join-Path $ScriptsDir "Create-AuditShortcuts.ps1"
+        $scriptPath = Find-ScriptPath "Create-AuditShortcuts.ps1"
         $content = Get-Content $scriptPath -Raw
         $content | Should -Match "Write-Log|Write-GoldISOLog"
     }

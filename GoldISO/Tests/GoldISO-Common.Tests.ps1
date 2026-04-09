@@ -79,9 +79,9 @@ Describe "Write-GoldISOLog" {
     }
 
     It "Writes DEBUG level message to log file when debug is enabled" {
-        $script:DebugLoggingEnabled = $true
+        Set-GoldISODebugLogging -Enabled $true
         Write-GoldISOLog -Message "Debug information" -Level "DEBUG"
-        $script:DebugLoggingEnabled = $false
+        Set-GoldISODebugLogging -Enabled $false
         $content = Get-Content $testLog -Tail 1
         $content | Should -Match "\[DEBUG\] Debug information"
     }

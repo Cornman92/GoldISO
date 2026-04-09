@@ -8,9 +8,11 @@
 #>
 
 BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot "TestHelpers.psm1") -Force
     $ProjectRoot = Join-Path $PSScriptRoot ".."
-    $ScriptPath  = Join-Path $ProjectRoot "Scripts\Export-Settings.ps1"
-    $script:Ast  = [System.Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$null, [ref]$null)
+    $script:ProjectRoot = $ProjectRoot
+    $ScriptPath  = Find-ScriptPath "Export-Settings.ps1"
+    $script:Ast  = if ($ScriptPath) { [System.Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$null, [ref]$null) } else { $null }
 }
 
 Describe "Export-Settings.ps1 - Structure" -Tag "Structure" {
