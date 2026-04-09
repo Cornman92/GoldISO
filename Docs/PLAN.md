@@ -11,15 +11,15 @@
 
 ### Phase 3: Multi-Layout Disk Support
 
-**Status:** In Progress  
+**Status:** Complete ✅  
 **Objective:** Allow `Build-GoldISO.ps1` and `Build-Autounattend.ps1` to accept `-DiskLayout` and produce correct partition XML for each layout.
 
-#### Outstanding Work
-1. Wire `GamerOS-3Disk.xml` variable substitution through `Build-Autounattend.ps1`
-2. Ensure `FirstLogonCommands` in `oobeSystem` pass creates `D:\P-Apps`, `D:\Scratch`, `E:\Media`, `E:\Backups`
-3. Validate `Config/Unattend/Passes/02-windowsPE.xml` embeds the correct layout XML for each layout
-4. Add Pester tests covering all three layouts (Phase 6 prep)
-5. Verify `Config/autounattend.xml` stays in sync when `-UseModular` builds are run
+#### Completed Work
+1. ✅ Wired `GamerOS-3Disk.xml` variable substitution through `Build-Autounattend.ps1`
+2. ✅ `FirstLogonCommands` in `oobeSystem` pass creates `D:\P-Apps`, `D:\Scratch`, `E:\Media`, `E:\Backups`
+3. ✅ `Config/Unattend/Passes/02-windowsPE.xml` uses `{{VARIABLE}}` placeholders, replaced at build time
+4. ✅ Pester tests covering all three layouts (`Tests/DiskLayouts.Tests.ps1`, `Tests/BuildValidation.Tests.ps1`)
+5. ✅ Root `autounattend.xml` synced with `Config/autounattend.xml`
 
 #### Phase 3 Decision Record
 - Disk layout naming uses `{Name}.xml` + `{Name}.json` — no `-Layout` suffix

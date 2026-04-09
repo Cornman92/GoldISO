@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **GoldISO** builds a custom Windows 11 25H2 ISO ("GamerOS") with offline driver injection, Windows Update packages, MSIX bundles, a modular unattended answer file, and a custom PowerShell profile. Output: `GamerOS-Win11x64Pro25H2.iso`.
 
-**Current phase:** Phase 3 (Multi-Layout Disk Support) is active. See `ROADMAP.md` for full phase status.
+**Current phase:** Phases 1–15 complete. Remaining work: hardware testing (Hyper-V VM validation, WinPE deployment). See `ROADMAP.md` for full phase history.
 
 ---
 
@@ -104,7 +104,7 @@ Adding a layout requires: both files, updated `ValidateSet` in `Build-Autounatte
 `Config/Unattend/Passes/` holds per-pass XML fragments. `Build-Autounattend.ps1` assembles them using a JSON profile. The `GamerOS-3Disk` layout's key unattend passes:
 - `windowsPE` — disk partitioning
 - `specialize` — .NET 3.5, driver injection
-- `oobeSystem` — 47 FirstLogonCommands, auto-logon as Administrator
+- `oobeSystem` — 51 FirstLogonCommands, auto-logon as Administrator
 
 ### PowerShell Profile
 Source: `Config/PowerShellProfile/PSProfile.C-Man/` (30+ lazy-loaded modules). Deployed to `C:\PowerShellProfile\` during FirstLogon. Config at `Config/PowerShellProfile/Config/profile-config.json`.
