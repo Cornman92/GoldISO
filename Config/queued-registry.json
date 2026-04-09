@@ -1,0 +1,119 @@
+{
+  "_version": "1.0",
+  "_lastUpdated": "2026-04-08",
+  "description": "Registry tweaks queue for GoldISO build. Applied offline to mounted WIM during build.",
+  "tweaks": [
+    {
+      "Hive": "HKLM",
+      "Path": "SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+      "Name": "NtfsDisable8dot3NameCreation",
+      "Type": "REG_DWORD",
+      "Data": "1",
+      "Description": "Disable 8.3 name creation for performance"
+    },
+    {
+      "Hive": "HKLM",
+      "Path": "SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+      "Name": "NtfsDisableLastAccessUpdate",
+      "Type": "REG_DWORD",
+      "Data": "1",
+      "Description": "Disable last access timestamp update"
+    },
+    {
+      "Hive": "HKLM",
+      "Path": "SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+      "Name": "NtfsMftZoneReservation",
+      "Type": "REG_DWORD",
+      "Data": "2",
+      "Description": "MFT zone reservation (2 = 25% default)"
+    },
+    {
+      "Hive": "HKLM",
+      "Path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management",
+      "Name": "DisablePagingExecutive",
+      "Type": "REG_DWORD",
+      "Data": "1",
+      "Description": "Keep driver code in memory"
+    },
+    {
+      "Hive": "HKLM",
+      "Path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management",
+      "Name": "LargeSystemCache",
+      "Type": "REG_DWORD",
+      "Data": "1",
+      "Description": "System cache optimization for performance"
+    },
+    {
+      "Hive": "HKLM",
+      "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects",
+      "Name": "VisualFXSetting",
+      "Type": "REG_DWORD",
+      "Data": "2",
+      "Description": "Custom visual effects"
+    },
+    {
+      "Hive": "HKLM",
+      "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+      "Name": "DisableWindowsUpdateAccess",
+      "Type": "REG_DWORD",
+      "Data": "1",
+      "Description": "Disable Windows Update access"
+    },
+    {
+      "Hive": "HKLM",
+      "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CurrentVersion\\PushNotifications",
+      "Name": "NoTileApplicationNotification",
+      "Type": "REG_DWORD",
+      "Data": "1",
+      "Description": "Disable toast notifications"
+    },
+    {
+      "Hive": "HKCU",
+      "Path": "Control Panel\\Desktop",
+      "Name": "MenuShowDelay",
+      "Type": "REG_SZ",
+      "Data": "0",
+      "Description": "Menu show delay"
+    },
+    {
+      "Hive": "HKCU",
+      "Path": "Control Panel\\Desktop",
+      "Name": "ForegroundLockTimeout",
+      "Type": "REG_DWORD",
+      "Data": "0",
+      "Description": "Foreground lock timeout"
+    },
+    {
+      "Hive": "HKCU",
+      "Path": "Control Panel\\Keyboard",
+      "Name": "KeyboardDelay",
+      "Type": "REG_DWORD",
+      "Data": "0",
+      "Description": "Keyboard repeat delay"
+    },
+    {
+      "Hive": "HKCU",
+      "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "Name": "Hidden",
+      "Type": "REG_DWORD",
+      "Data": "1",
+      "Description": "Show hidden files"
+    },
+    {
+      "Hive": "HKCU",
+      "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "Name": "HideFileExt",
+      "Type": "REG_DWORD",
+      "Data": "0",
+      "Description": "Show file extensions"
+    },
+    {
+      "Hive": "HKCU",
+      "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualFXSettings\\VisualFXSettings",
+      "Name": "VisualFXSetting",
+      "Type": "REG_DWORD",
+      "Data": "3",
+      "Description": "Animate windows, menus, lists"
+    }
+  ]
+}
