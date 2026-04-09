@@ -33,6 +33,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$commonModule = Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1"
+if (Test-Path $commonModule) {
+    Import-Module $commonModule -Force
+}
+
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $snapshotDir = Join-Path $projectRoot "Config\Snapshots"
 if (-not (Test-Path $snapshotDir)) {

@@ -27,6 +27,11 @@ param(
 
 $ErrorActionPreference = "Continue"
 
+$commonModule = Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1"
+if (Test-Path $commonModule) {
+    Import-Module $commonModule -Force -ErrorAction SilentlyContinue
+}
+
 Write-Host "GoldISO System Health Check" -ForegroundColor Cyan
 Write-Host "=" * 60
 
@@ -73,7 +78,7 @@ foreach ($letter in $gamerOSLetters) {
     if ($vol) {
         Write-Host "  [$($letter):] Present - $($vol.FileSystem) ($([math]::Round($vol.Size/1GB,1)) GB)" -ForegroundColor Green
     } else {
-        Write-Host "  [$letter:] Missing" -ForegroundColor Red
+        Write-Host "  [$($letter):] Missing" -ForegroundColor Red
     }
 }
 
