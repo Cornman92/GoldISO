@@ -96,7 +96,7 @@ Disk 2 (1TB Windows NVMe) - 5 partitions:
 
 ---
 
-## Phase 4: Drive Letter Protection 
+## Phase 4: Drive Letter Protection ✅ COMPLETE
 
 **Goal:** Prevent removable drives from stealing reserved drive letters
 
@@ -110,7 +110,7 @@ Disk 2 (1TB Windows NVMe) - 5 partitions:
 
 ---
 
-## Phase 5: WinPE Integration Enhancement 📋 PLANNED
+## Phase 5: WinPE Integration Enhancement ✅ COMPLETE
 
 **Goal:** Improve image capture/apply workflows
 
@@ -177,14 +177,16 @@ Disk 2 (1TB Windows NVMe) - 5 partitions:
 
 ## Changelog
 
-### v3.2 (Current)
-- Added `-DiskLayout` parameter support
-- Standardized disk layout naming (removed `-Layout` suffix)
-- Added `SingleDisk-DevGaming` layout with P:, S:, M:, B: letters
-- Added checkpoint system for resumable builds
-- Added parallel driver injection
+### v3.3 (Current)
+- Added modular answer file system (Config/Unattend/)
+- Added Config/DiskLayouts/ with GamerOS-3Disk, SingleDisk-DevGaming, SingleDisk-Generic
+- Added GPO support (Config/GPO/, Scripts/GPO/)
+- Added drive letter protection (ProtectLetters.ps1)
+- Added WinPE checkpoint system with resume support
+- Enhanced Apply-Image.ps1 with -DiskLayout parameter
+- Added comprehensive test suites
 
-### v3.1
+### v3.2
 - Professional hardening engine (registry, services, FSUtil)
 - Queued driver store management
 - Offline debloating system
