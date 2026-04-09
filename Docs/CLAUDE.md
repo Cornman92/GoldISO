@@ -18,36 +18,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Validation (run before every build)
 ```powershell
-.\Scripts\Test-Environment.ps1           # pre-flight check (once per session)
-.\Scripts\Test-UnattendXML.ps1           # validate answer file
-.\Scripts\Test-UnattendXML.ps1 -Verbose  # detailed failure output
+.\Scripts\Testing\Test-Environment.ps1           # pre-flight check (once per session)
+.\Scripts\Testing\Test-UnattendXML.ps1           # validate answer file
+.\Scripts\Testing\Test-UnattendXML.ps1 -Verbose  # detailed failure output
+.\Scripts\Testing\Invoke-Lint.ps1                # PSScriptAnalyzer across all scripts
 ```
 
 ### Build
 ```powershell
 # Full pipeline (recommended)
-.\Scripts\Start-BuildPipeline.ps1
-.\Scripts\Start-BuildPipeline.ps1 -DeployToVM -Verbose
-.\Scripts\Start-BuildPipeline.ps1 -SkipTests -KeepArtifacts 3
+.\Scripts\ConfigManagement\Start-BuildPipeline.ps1
+.\Scripts\ConfigManagement\Start-BuildPipeline.ps1 -DeployToVM -Verbose
+.\Scripts\ConfigManagement\Start-BuildPipeline.ps1 -SkipTests -KeepArtifacts 3
 
 # Direct build
-.\Scripts\Build-GoldISO.ps1
-.\Scripts\Build-GoldISO.ps1 -SkipDriverInjection -SkipPackageInjection -Verbose
+.\Scripts\Build\Build-GoldISO.ps1
+.\Scripts\Build\Build-GoldISO.ps1 -SkipDriverInjection -SkipPackageInjection -Verbose
 
 # With disk layout
-.\Scripts\Build-GoldISO.ps1 -DiskLayout GamerOS-3Disk
+.\Scripts\Build\Build-GoldISO.ps1 -DiskLayout GamerOS-3Disk
 
 # With modular answer file
-.\Scripts\Build-GoldISO.ps1 -UseModular -ProfilePath Config\profile.json
+.\Scripts\Build\Build-GoldISO.ps1 -UseModular -ProfilePath Config\profile.json
 
 # Resumable build
-.\Scripts\Build-GoldISO.ps1 -Resume
-.\Scripts\Build-GoldISO.ps1 -ClearCheckpoint
+.\Scripts\Build\Build-GoldISO.ps1 -Resume
+.\Scripts\Build\Build-GoldISO.ps1 -ClearCheckpoint
 ```
 
 ### Modular answer file generation
 ```powershell
-.\Scripts\Build\Build-Autounattend.ps1 -ProfilePath Config\Profiles\gaming-gameros.json -DiskLayout GamerOS-3Disk -EmbedScripts
+.\Scripts\Build\Build-Autounattend.ps1 -ProfilePath Config\Unattend\Profiles\gaming-gameros.json -DiskLayout GamerOS-3Disk -EmbedScripts
 ```
 
 ### Tests
@@ -61,8 +62,8 @@ Install-Module Pester -MinimumVersion 5.0 -Force -SkipPublisherCheck
 
 ### WinPE (run from WinPE environment)
 ```powershell
-.\Scripts\Capture-Image.ps1                # capture Disk 2 to WIM, move to USB
-.\Scripts\Apply-Image.ps1                  # auto-detect WIM on USB, apply to Disk 2
+.\Scripts\Deployment\Capture-Image.ps1     # capture Disk 2 to WIM, move to USB
+.\Scripts\Deployment\Apply-Image.ps1       # auto-detect WIM on USB, apply to Disk 2
 ```
 
 ---
@@ -79,9 +80,11 @@ Install-Module Pester -MinimumVersion 5.0 -Force -SkipPublisherCheck
 | `Config/Unattend/Profiles/gaming-gameros.json` | Active build profile |
 | `Config/DiskLayouts/*.xml/.json` | Disk partition templates; each layout needs both files |
 | `Scripts/Modules/GoldISO-Common.psm1` | Shared module — logging, admin check, path validation |
-| `Scripts/Build-GoldISO.ps1` | Main ISO builder |
+| `Scripts/Build/Build-GoldISO.ps1` | Main ISO builder |
 | `Scripts/Build/Build-Autounattend.ps1` | Modular answer file generator |
-| `Scripts/Start-BuildPipeline.ps1` | Orchestrates full validate → build → deploy flow |
+| `Scripts/ConfigManagement/Start-BuildPipeline.ps1` | Orchestrates full validate → build → deploy flow |
+| `Scripts/Deployment/Capture-Image.ps1` | WinPE image capture with progress/checkpoint |
+| `Scripts/Deployment/Apply-Image.ps1` | WinPE image apply with disk layout selection |
 
 ### Build Pipeline (Steps)
 1. Mount source ISO (`Win11_25H2_English_x64_v2.iso`) → copy to `C:\GoldISO_Build`
@@ -118,7 +121,7 @@ Source: `Config/PowerShellProfile/PSProfile.C-Man/` (30+ lazy-loaded modules). D
 [CmdletBinding()]
 param(...)
 
-Import-Module (Join-Path $PSScriptRoot "..\Scripts\Modules\GoldISO-Common.psm1") -Force
+Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force  # standard: Scripts/SubDir/Script.ps1
 Test-GoldISOAdmin -ExitIfNotAdmin
 
 $ErrorActionPreference = "Stop"

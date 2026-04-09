@@ -229,10 +229,10 @@ In the autounattend.xml (root level), there's a Reseal component for Audit mode:
 
 | File | Purpose |
 |------|---------|
-| `Scripts/Capture-Image.ps1` | WinPE capture tool |
-| `Scripts/Apply-Image.ps1` | WinPE apply tool |
-| `Scripts/AuditMode-Continue.ps1` | Audit → OOBE transition |
-| `Scripts/Build-GoldISO.ps1` | Updated with multi-phase support |
+| `Scripts/Deployment/Capture-Image.ps1` | WinPE capture tool |
+| `Scripts/Deployment/Apply-Image.ps1` | WinPE apply tool |
+| `Scripts/Maintenance/AuditMode-Continue.ps1` | Audit → OOBE transition |
+| `Scripts/Build/Build-GoldISO.ps1` | Updated with multi-phase support |
 | `Config/autounattend.xml` | Disk wipe + audit mode sections |
 
 ## Troubleshooting

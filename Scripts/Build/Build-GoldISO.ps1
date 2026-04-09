@@ -18,7 +18,7 @@
 # --- PROFESSIONAL HARDENING ENGINE (V3.1) ---
 
 # Import common module for logging and utilities
-Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
 
 $ErrorActionPreference = "Stop"
 

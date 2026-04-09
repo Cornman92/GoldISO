@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 
 # Import common module
-Import-Module (Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1") -Force
+Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
 
 <#
 .SYNOPSIS

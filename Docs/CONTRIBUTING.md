@@ -43,7 +43,7 @@ Every `.ps1` script must:
 1. Create `Config/DiskLayouts/{Name}.xml` — use `{{VARIABLE}}` for configurable values
 2. Create `Config/DiskLayouts/{Name}.json` — define `variables` (each with a `default`), `disks`, and `driveLetters`
 3. Add `{Name}` to `[ValidateSet(...)]` in `Scripts/Build/Build-Autounattend.ps1`
-4. Add `{Name}` to `[ValidateSet(...)]` in `Scripts/Build-GoldISO.ps1`
+4. Add `{Name}` to `[ValidateSet(...)]` in `Scripts/Build/Build-GoldISO.ps1`
 5. Update Phase 3 table in `ROADMAP.md`
 6. Update Available Templates in `Config/DiskLayouts/README.md`
 7. Test in Hyper-V before bare-metal
