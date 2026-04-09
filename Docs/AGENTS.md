@@ -34,12 +34,11 @@ GoldISO/
 ## Critical Paths
 
 - **Source ISO**: `Win11_25H2_English_x64_v2.iso` (in project root)
-- **Canonical Answer File**: `autounattend.xml` (project root)
-- **Config Answer File**: `Config/autounattend.xml` (reference copy)
+- **Canonical Answer File**: `Config/autounattend.xml` — always edit this one; root copy is generated
 - **Build Output**: `GamerOS-Win11x64Pro25H2.iso`
 - **Working Directory**: `C:\GoldISO_Build`
 - **Mount Point**: `C:\Mount`
-- **Log Directory**: `Scripts/Logs/` (gitignored)
+- **Log Directory**: `Logs/` (project root, gitignored; `Logs/Pipeline/` for pipeline runs)
 
 ## Build Pipeline
 
@@ -281,6 +280,17 @@ These extract to `C:\ProgramData\Winhance\Unattend\Scripts\` during specialize:
 | `createramdisk.cmd` | Creates 8 GB RAM disk at R: |
 | `tweaks-system.cmd` | HKLM performance registry tweaks |
 | `tweaks-user.cmd` | HKCU performance registry tweaks |
+
+## System Health & Reporting Scripts
+
+| Script | Location | Purpose |
+|--------|----------|---------|
+| `Test-SystemHealth.ps1` | `Scripts/Testing/` | Checks Windows Update status, service state, disk space, and basic system health. Returns pass/fail summary. Run post-install to confirm baseline. |
+| `Get-SystemReport.ps1` | `Scripts/Testing/` | Generates comprehensive 667-line diagnostic report: hardware inventory, driver versions, installed apps, network config, performance counters. Outputs to `Logs/SystemReport-<ts>.txt`. |
+| `Measure-BuildTime.ps1` | `Scripts/Testing/` | Instruments build pipeline stages; outputs per-stage timing to `Logs/build-metrics-<date>.json`. |
+| `Test-VMPerformance.ps1` | `Scripts/Testing/` | Runs performance baseline inside Hyper-V test VM. |
+
+These scripts are not wired into the build pipeline — run them manually post-install or post-build.
 
 ## Prerequisites
 

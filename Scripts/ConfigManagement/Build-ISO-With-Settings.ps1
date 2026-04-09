@@ -1,8 +1,5 @@
 #Requires -Version 5.1
 
-# Import common module
-Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
-
 <#
 .SYNOPSIS
     Build GoldISO with embedded settings migration package.
@@ -57,14 +54,19 @@ param(
     [string]$GWIGPipeline = (Join-Path (Split-Path $PSScriptRoot -Parent) "..\GWIG\Invoke-GamerOSPipeline-v2.ps1")
 )
 
+# Import common module
+Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+
 # Configuration & Setup
 $ErrorActionPreference = "Stop"
 $script:StartTime = Get-Date
 
-$script:ProjectRoot = Split-Path $PSScriptRoot -Parent
+$script:ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
 # Initialize centralized logging
-$logFile = Join-Path $PSScriptRoot "Build-ISO-With-Settings.log"
+$logDir = Join-Path $script:ProjectRoot "Logs"
+if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+$logFile = Join-Path $logDir "Build-ISO-With-Settings-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 Initialize-Logging -LogPath $logFile
 Write-Log "---------------------------------------------------------------" "INFO"
 Write-Log "Build ISO with Settings Migration" "INFO"

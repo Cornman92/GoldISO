@@ -5,9 +5,27 @@
 
 ---
 
-## Active Goal: Complete Phase 7 - Integration Testing
+## Active Goal: Phase II — Infrastructure Hardening (from .ai/ROADMAP.md)
 
-**Phase 7 Status: Complete** ✅
+**Phase 7 Status: Complete** ✅  
+**Phase II Status: In Progress** 🔄
+
+### Phase II Remaining Work
+- [x] II-A: autounattend.xml sync fix — `Config/autounattend.xml` is canonical, copied at build time
+- [x] II-B: `Tests/BuildWithSettings.Tests.ps1` — Pester tests for Build-ISO-With-Settings.ps1
+- [x] II-C: Log hygiene — fixed `Build-ISO-With-Settings.ps1` log path; all scripts use project-root `Logs/`
+- [x] II-D: `.gitignore` expansion — `Config/SettingsMigration/Settings-Migration-*/` present
+
+### Phase III Status (Complete)
+- [x] III-A: `Scripts/System/Update-Drivers.ps1` — audits staged .inf files; downloads from manifest URLs
+- [x] III-C: `Scripts/Testing/Test-PackageFreshness.ps1` — package age check with Update Catalog links
+- [x] III-D: `Scripts/Testing/Validate-WingetPackages.ps1` — implemented
+
+### Documentation (Complete)
+- [x] Added `Get-SystemHealth.ps1` and `Get-SystemReport.ps1` to `Docs/AGENTS.md`
+- [x] Fixed `Docs/AGENTS.md` log directory path (`Scripts/Logs/` → `Logs/`)
+
+---
 
 ### Phase 3: Multi-Layout Disk Support
 

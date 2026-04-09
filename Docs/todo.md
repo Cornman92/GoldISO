@@ -10,6 +10,27 @@ All 6 planned phases are complete. New work below.
 
 ---
 
+## Phase II: Infrastructure Hardening
+
+- [x] II-A: autounattend.xml sync — `Config/autounattend.xml` canonical; `Build-GoldISO.ps1` copies at build time
+- [x] II-B: `Tests/BuildWithSettings.Tests.ps1` — Pester tests for Build-ISO-With-Settings.ps1 and Export-Settings.ps1
+- [x] II-C: Log file hygiene — all scripts use project-root `Logs/`, not `Scripts/Logs/`; fixed `Build-ISO-With-Settings.ps1` log path
+- [x] II-D: `.gitignore` expansion — `Config/SettingsMigration/Settings-Migration-*/` present; `Scripts/Logs/` not needed
+
+### Phase III: Driver & Package Automation
+
+- [x] III-A: `Scripts/System/Update-Drivers.ps1` — audits staged .inf files per category; downloads missing drivers from manifest URLs
+- [x] III-D: `Scripts/Testing/Validate-WingetPackages.ps1` — validates all package IDs in winget-packages.json
+- [x] III-C: `Scripts/Testing/Test-PackageFreshness.ps1` — checks .msu/.cab age vs MaxAgeDays; links to Update Catalog for supersedence check
+
+### Documentation
+
+- [x] Add `Get-SystemHealth.ps1` and `Get-SystemReport.ps1` to `Docs/AGENTS.md`
+- [x] Fix stale `Scripts/Logs/` log directory reference in `Docs/AGENTS.md`
+- [x] Fix stale script paths in `Docs/AGENTS.md` project structure (subdirectory reorganization)
+
+---
+
 ## Phase 7: Integration Testing (Proposed)
 
 > A new phase to address remaining testing and validation items.
