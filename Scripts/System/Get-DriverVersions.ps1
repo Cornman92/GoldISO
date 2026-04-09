@@ -22,7 +22,11 @@ param(
 
 $ErrorActionPreference = "Continue"
 
-$ProjectRoot = Split-Path $PSScriptRoot -Parent
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
+$ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $DriversPath = Join-Path $ProjectRoot "Drivers"
 $ManifestPath = Join-Path $DriversPath "download-manifest.json"
 

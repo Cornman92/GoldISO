@@ -225,6 +225,8 @@ if (Get-Command direnv -ErrorAction SilentlyContinue) {
             $checkDir = $parent
         }
 
+        if ([string]::IsNullOrWhiteSpace($checkDir)) { return }
+
         $envrcPath = Join-Path $checkDir '.envrc'
         if (-not (Test-Path $envrcPath)) { return }
 

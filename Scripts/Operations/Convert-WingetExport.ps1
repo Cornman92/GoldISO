@@ -68,6 +68,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
 #region Configuration
 
 # Category detection patterns

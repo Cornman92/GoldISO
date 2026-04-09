@@ -1,4 +1,6 @@
+#Requires -Version 5.1
 #Requires -RunAsAdministrator
+
 <#
 .SYNOPSIS
     Configures reserved drive letters for GamerOS-3Disk layout.
@@ -30,9 +32,11 @@ param(
     [switch]$SetupMountM    # Claim M: as mount point
 )
 
-#Requires -Version 5.1
-
 $ErrorActionPreference = "Stop"
+
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
 
 function Write-Status {
     param([string]$Message, [string]$Status = "INFO")

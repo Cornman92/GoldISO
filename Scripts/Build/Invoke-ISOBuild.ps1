@@ -1,11 +1,5 @@
 #Requires -Version 5.1
 
-# Import common module for logging and utilities
-$modulePath = Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1"
-if (Test-Path $modulePath) {
-    Import-Module $modulePath -Force
-}
-
 <#
 .SYNOPSIS
     Invoke ISO Build with Offline Image Modification Mode
@@ -93,8 +87,12 @@ param(
 
 # Initialize
 $ErrorActionPreference = "Stop"
-$script:ProjectRoot = Split-Path $PSScriptRoot -Parent
+$script:ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $script:LogFile = "$WorkingDir\iso-build.log"
+
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
 
 # Default path resolution
 if ([string]::IsNullOrEmpty($SourceISO)) {

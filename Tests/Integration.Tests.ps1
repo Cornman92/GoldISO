@@ -96,6 +96,9 @@ Describe "Logging Across Scripts" {
     }
 
     It "Should handle concurrent logging gracefully" {
+        # Note: This test requires PowerShell job infrastructure that may fail in certain
+        # environments. In practice, the logging mechanism handles concurrent writes via
+        # file locking. The test validates this behavior works.
         $testFile = Join-Path $TestLogDir "concurrent.log"
         Initialize-Logging -LogPath $testFile
 

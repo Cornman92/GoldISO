@@ -29,7 +29,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path $PSScriptRoot -Parent
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
+$projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 if (-not $OutputPath) {
     $OutputPath = Join-Path $projectRoot "Ventoy"
 }
@@ -81,16 +85,14 @@ if ($Persistence -gt 0) {
 $scriptDir = Join-Path $OutputPath "script"
 New-Item -ItemType Directory -Path $scriptDir -Force | Out-Null
 
-@'<?xml version="1.0" encoding="utf-8"?>
+@'
+<?xml version="1.0" encoding="utf-8"?>
 <Ventoy>
   <profile>
-    < menus>
-      < label="GamerOS Windows 11 Pro 25H2 (Auto Install)">
-        < type>auto_install</type>
-        < source>/GamerOS-Win11x64Pro25H2.iso</source>
-        < autoyast>ventoy://</autoyast>
-      </menu>
-    </menus>
+    <menu class="submenu" name="GamerOS Windows 11 Pro 25H2 (Auto Install)">
+      <image>/GamerOS-Win11x64Pro25H2.iso</image>
+      <template>ventoy://script/autounattend.xml</template>
+    </menu>
   </profile>
 </Ventoy>
 '@ | Set-Content (Join-Path $scriptDir "autounattend.xml") -Encoding UTF8

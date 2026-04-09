@@ -69,15 +69,15 @@ $script:StartTime = Get-Date
 $script:StageResults = [System.Collections.Generic.List[hashtable]]::new()
 $script:PipelineStatus = "Running"
 
-$commonModule = Join-Path $PSScriptRoot "Modules\GoldISO-Common.psm1"
-if (Test-Path $commonModule) {
-    Import-Module $commonModule -Force
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
 }
 
-$script:LogDir = Join-Path $PSScriptRoot "..\Logs\Pipeline"
+$projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$script:LogDir = Join-Path $projectRoot "Logs\Pipeline"
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $script:LogFile = Join-Path $script:LogDir "pipeline-$timestamp.log"
-$script:ArtifactDir = Join-Path $PSScriptRoot "..\Artifacts"
+$script:ArtifactDir = Join-Path $projectRoot "Artifacts"
 
 New-Item -ItemType Directory -Path $script:LogDir -Force -ErrorAction SilentlyContinue | Out-Null
 New-Item -ItemType Directory -Path $script:ArtifactDir -Force -ErrorAction SilentlyContinue | Out-Null

@@ -1,8 +1,5 @@
 param()
 
-# Standard imports for consistent behavior
-. "$PSScriptRoot\..\Lib\StandardImports.ps1"
-
 #region ── Git Tab Completion ─────────────────────────────────────────────────
 
 if (Get-Command -Name 'git' -ErrorAction SilentlyContinue) {

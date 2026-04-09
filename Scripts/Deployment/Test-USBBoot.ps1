@@ -28,6 +28,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
 $drive = "$DriveLetter`:"
 Write-Host "Validating USB drive: $drive" -ForegroundColor Cyan
 Write-Host "=" * 50

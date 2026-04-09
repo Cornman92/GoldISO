@@ -16,6 +16,10 @@ param(
     [switch]$Force
 )
 
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
 $LGPOUrl = "https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9129-EB5938ABF5E2/LGPO.zip"
 $LGPOZip = Join-Path $env:TEMP "LGPO.zip"
 $LGPOExe = Join-Path $InstallPath "LGPO.exe"

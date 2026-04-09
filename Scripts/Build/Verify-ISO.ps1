@@ -28,6 +28,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
 if (-not (Test-Path $ISOPath)) {
     Write-Error "ISO not found: $ISOPath"
     exit 1

@@ -1,6 +1,10 @@
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
 
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
 $ProjectRoot = "C:\ProgramData\GoldISO"
 $ManifestPath = Join-Path $ProjectRoot "Config\build-manifest.json"
 $DriversDir = Join-Path $ProjectRoot "Drivers"

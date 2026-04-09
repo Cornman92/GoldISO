@@ -43,7 +43,7 @@ function Show-CompactBanner {
     )
 
     $tc = $Theme
-    $adminTag = if ($IsAdmin) { " [ADMIN]" } else { '' }
+    $adminTag = if ($IsAdmin) { " [C-Man]" } else { '' }
     $psVersion = "PS $($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)"
     $profileModuleCount = $script:ProfileLoadTimes.Count
     $failCount = ($script:ProfileLoadTimes | Where-Object -FilterScript { $_.Status -ne 'OK' }).Count

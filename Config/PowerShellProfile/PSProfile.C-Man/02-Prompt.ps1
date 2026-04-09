@@ -241,7 +241,7 @@ if ($script:PromptMode -eq 'Custom') {
 
         $tc = $Global:Theme
         $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-        $prefix = if ($isAdmin) { "`e[91m\uf0e7 ADMIN `e[0m" } else { '' }
+        $prefix = if ($isAdmin) { "`e[91m★ C-Man `e[0m" } else { '' }
 
         # Truncated path
         $currentPath = $ExecutionContext.SessionState.Path.CurrentLocation.Path

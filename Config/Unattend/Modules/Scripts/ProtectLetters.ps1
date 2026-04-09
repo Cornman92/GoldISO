@@ -43,7 +43,7 @@ try {
         Where-Object { $_.DriveType -eq 'Removable' -and $_.DriveLetter }
 
     if (-not $removableVolumes) {
-        Write-ProtectLog "No removable volumes found — nothing to reassign"
+        Write-ProtectLog "No removable volumes found - nothing to reassign"
         exit 0
     }
 
@@ -51,7 +51,7 @@ try {
         $letter = $vol.DriveLetter
 
         if ($ProtectedLetters -contains $letter) {
-            Write-ProtectLog "Removable volume is occupying protected letter '$($letter):' — reassigning" 'WARN'
+            Write-ProtectLog "Removable volume is occupying protected letter '$($letter):' - reassigning" 'WARN'
 
             # Find first fallback letter not already in use
             $usedLetters = (Get-Volume -ErrorAction SilentlyContinue |
@@ -70,7 +70,7 @@ try {
                     Write-ProtectLog "Failed to reassign '$($letter):': $($_.Exception.Message)" 'ERROR'
                 }
             } else {
-                Write-ProtectLog "No available fallback letter to reassign '$($letter):' — protected letter remains occupied" 'ERROR'
+                Write-ProtectLog "No available fallback letter to reassign '$($letter):' - protected letter remains occupied" 'ERROR'
             }
         } else {
             Write-ProtectLog "Removable volume at '$($letter):' does not conflict with protected letters"

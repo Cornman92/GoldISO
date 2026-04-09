@@ -40,8 +40,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
 # Resolve paths
-$script:ProjectRoot = Split-Path $PSScriptRoot -Parent
+$script:ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
 if (-not $DriverQueuePath) {
     $DriverQueuePath = Join-Path $script:ProjectRoot "Config\driver-queue.json"

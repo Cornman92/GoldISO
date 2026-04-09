@@ -18,7 +18,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ProjectRoot = Split-Path $PSScriptRoot -Parent
+if (Test-Path (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1")) {
+    Import-Module (Join-Path $PSScriptRoot "..\Modules\GoldISO-Common.psm1") -Force
+}
+
+$ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $ManifestPath = Join-Path $ProjectRoot "Config\build-manifest.json"
 
 if (-not (Test-Path $ManifestPath)) {
