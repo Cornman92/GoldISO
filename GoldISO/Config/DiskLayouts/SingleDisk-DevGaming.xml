@@ -1,0 +1,186 @@
+<DiskConfigurations>
+
+  <!-- ===================== DISK 0 ===================== -->
+  <DiskConfiguration>
+    <DiskID>0</DiskID>
+    <WillWipeDisk>true</WillWipeDisk>
+
+    <CreatePartitions>
+      <!-- 150 GB P-Apps -->
+      <CreatePartition>
+        <Order>1</Order>
+        <Type>Primary</Type>
+        <Size>153600</Size>
+      </CreatePartition>
+
+      <!-- 60 GB Scratch -->
+      <CreatePartition>
+        <Order>2</Order>
+        <Type>Primary</Type>
+        <Size>61440</Size>
+      </CreatePartition>
+
+      <!-- Remaining space: SSD-OP (RAW) -->
+      <CreatePartition>
+        <Order>3</Order>
+        <Type>Primary</Type>
+        <Size>22528</Size>
+      </CreatePartition>
+    </CreatePartitions>
+
+    <ModifyPartitions>
+      <!-- P-Apps -->
+      <ModifyPartition>
+        <Order>1</Order>
+        <PartitionID>1</PartitionID>
+        <Format>NTFS</Format>
+        <Label>P-Apps</Label>
+        <Letter>P</Letter>
+      </ModifyPartition>
+
+      <!-- Scratch -->
+      <ModifyPartition>
+        <Order>2</Order>
+        <PartitionID>2</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Scratch</Label>
+        <Letter>S</Letter>
+      </ModifyPartition>
+
+      <!-- SSD-OP (RAW) -->
+      <ModifyPartition>
+        <Order>3</Order>
+        <PartitionID>3</PartitionID>
+        <Format>RAW</Format>
+        <Label>SSD-OP</Label>
+      </ModifyPartition>
+    </ModifyPartitions>
+  </DiskConfiguration>
+
+
+
+  <!-- ===================== DISK 1 (1 TB HDD) ===================== -->
+  <DiskConfiguration>
+    <DiskID>1</DiskID>
+    <WillWipeDisk>true</WillWipeDisk>
+
+    <CreatePartitions>
+      <!-- Media -->
+      <CreatePartition>
+        <Order>1</Order>
+        <Type>Primary</Type>
+        <Size>476837</Size>
+      </CreatePartition>
+
+      <!-- Backups -->
+      <CreatePartition>
+        <Order>2</Order>
+        <Type>Primary</Type>
+        <Size>476837</Size>
+      </CreatePartition>
+    </CreatePartitions>
+
+    <ModifyPartitions>
+      <ModifyPartition>
+        <Order>1</Order>
+        <PartitionID>1</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Media</Label>
+        <Letter>M</Letter>
+      </ModifyPartition>
+
+      <ModifyPartition>
+        <Order>2</Order>
+        <PartitionID>2</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Backups</Label>
+        <Letter>B</Letter>
+      </ModifyPartition>
+    </ModifyPartitions>
+  </DiskConfiguration>
+
+
+
+  <!-- ===================== DISK 2 (OS Disk) ===================== -->
+  <DiskConfiguration>
+    <DiskID>2</DiskID>
+    <WillWipeDisk>true</WillWipeDisk>
+
+    <CreatePartitions>
+      <!-- EFI -->
+      <CreatePartition>
+        <Order>1</Order>
+        <Type>EFI</Type>
+        <Size>300</Size>
+      </CreatePartition>
+
+      <!-- MSR -->
+      <CreatePartition>
+        <Order>2</Order>
+        <Type>MSR</Type>
+        <Size>16</Size>
+      </CreatePartition>
+
+      <!-- Recovery BEFORE Windows -->
+      <CreatePartition>
+        <Order>3</Order>
+        <Type>Primary</Type>
+        <Size>15360</Size>
+      </CreatePartition>
+
+      <!-- Windows -->
+      <CreatePartition>
+        <Order>4</Order>
+        <Type>Primary</Type>
+        <Extend>true</Extend>
+      </CreatePartition>
+
+      <!-- Overprovisioning -->
+      <CreatePartition>
+        <Order>5</Order>
+        <Type>Primary</Type>
+        <Size>92160</Size>
+      </CreatePartition>
+    </CreatePartitions>
+
+    <ModifyPartitions>
+      <ModifyPartition>
+        <Order>1</Order>
+        <PartitionID>1</PartitionID>
+        <Format>FAT32</Format>
+        <Label>System</Label>
+      </ModifyPartition>
+
+      <ModifyPartition>
+        <Order>2</Order>
+        <PartitionID>3</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Recovery</Label>
+      </ModifyPartition>
+
+      <ModifyPartition>
+        <Order>3</Order>
+        <PartitionID>4</PartitionID>
+        <Format>NTFS</Format>
+        <Label>Windows</Label>
+        <Letter>C</Letter>
+      </ModifyPartition>
+
+      <ModifyPartition>
+        <Order>4</Order>
+        <PartitionID>5</PartitionID>
+        <Format>RAW</Format>
+        <Label>OP</Label>
+      </ModifyPartition>
+    </ModifyPartitions>
+
+    <PostActions>
+      <PostAction>
+        <Action>shrink</Action>
+        <Partition>4</Partition>
+        <ShrinkByMB>107520</ShrinkByMB>
+      </PostAction>
+    </PostActions>
+  </DiskConfiguration>
+
+</DiskConfigurations>

@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "note": "Hardware compatibility matrix - tested hardware profiles",
+  "lastUpdated": "2026-04-07",
+  "tested": [
+    {
+      "profile": "gameros-primary",
+      "cpu": "Intel Core i9-14900K",
+      "mobo": "ASUS ROG Maximus Z790 Hero",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti",
+      "ram": "64GB DDR5",
+      "primaryStorage": "Samsung 990 Pro 2TB",
+      "secondaryStorage": "Various",
+      "date": "2026-04-07",
+      "status": "pass",
+      "notes": "Primary target hardware"
+    }
+  ],
+  "minimumRequirements": {
+    "cpu": "Intel 12th Gen / AMD Zen 3+",
+    "ram": "16GB",
+    "storage": "256GB NVMe",
+    "features": "TPM 2.0, Secure Boot, UEFI"
+  }
+}

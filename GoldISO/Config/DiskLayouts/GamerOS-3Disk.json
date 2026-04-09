@@ -1,0 +1,165 @@
+{
+  "name": "GamerOS-3Disk",
+  "description": "3-disk gaming setup: SSD (D: with folders), HDD (E: with folders), Windows (C:) + 90GB OP",
+  "version": "2.0",
+  "author": "GoldISO Build System (CUSTOM - LOCKED)",
+  "diskCount": 3,
+  "notes": "DO NOT MODIFY - Drive letters D, E, F are protected. Overprovisioning partitions are RAW.",
+  "variables": {
+    "WINDOWS_DISK_ID": {
+      "default": "2",
+      "description": "Disk ID for Windows NVMe drive",
+      "type": "integer"
+    },
+    "SSD_DISK_ID": {
+      "default": "0",
+      "description": "Disk ID for SSD",
+      "type": "integer"
+    },
+    "HDD_DISK_ID": {
+      "default": "1",
+      "description": "Disk ID for HDD",
+      "type": "integer"
+    },
+    "WINDOWS_PARTITION_SIZE": {
+      "default": "845838",
+      "description": "Windows partition size in MB (~826GB for 1TB drive)",
+      "type": "integer",
+      "calculated": "953674 - 300 - 16 - 15360 - 92160"
+    },
+    "PAPPS_PARTITION_SIZE": {
+      "default": "153600",
+      "description": "P-Apps partition size in MB (150GB)",
+      "type": "integer",
+      "calculated": "150 * 1024"
+    },
+    "SCRATCH_PARTITION_SIZE": {
+      "default": "61440",
+      "description": "Scratch partition size in MB (60GB)",
+      "type": "integer",
+      "calculated": "60 * 1024"
+    },
+    "MEDIA_PARTITION_SIZE": {
+      "default": "476837",
+      "description": "Media partition size in MB (~465GB for half of 1TB)",
+      "type": "integer",
+      "calculated": "~(1000000/2) - overhead"
+    },
+    "RECOVERY_PARTITION_SIZE": {
+      "default": "15360",
+      "description": "Recovery partition size in MB (15GB)",
+      "type": "integer",
+      "calculated": "15 * 1024"
+    },
+    "OVERPROVISIONING_SIZE": {
+      "default": "92160",
+      "description": "Overprovisioning partition size in MB (90GB)",
+      "type": "integer",
+      "calculated": "90 * 1024"
+    },
+    "EFI_PARTITION_SIZE": {
+      "default": "300",
+      "description": "EFI system partition size in MB",
+      "type": "integer"
+    },
+    "MSR_PARTITION_SIZE": {
+      "default": "16",
+      "description": "Microsoft Reserved Partition size in MB",
+      "type": "integer"
+    }
+  },
+  "disks": [
+    {
+      "id": "{{SSD_DISK_ID}}",
+      "type": "SSD (232GB)",
+      "notes": "2 partitions only. Folders P-Apps and Scratch created by FirstLogonCommands in D:",
+      "partitions": [
+        {
+          "order": 1,
+          "type": "Primary",
+          "extend": true,
+          "format": "NTFS",
+          "label": "Apps",
+          "letter": "D",
+          "folders": ["P-Apps", "Scratch"]
+        },
+        {
+          "order": 2,
+          "type": "Primary",
+          "size": "22528",
+          "format": "RAW",
+          "label": "SSD-OP",
+          "purpose": "Overprovisioning (~22GB, ~10% of 232GB)"
+        }
+      ]
+    },
+    {
+      "id": "{{HDD_DISK_ID}}",
+      "type": "HDD (1TB)",
+      "notes": "1 partition only. Folders Media and Backups created by FirstLogonCommands in E:",
+      "partitions": [
+        {
+          "order": 1,
+          "type": "Primary",
+          "extend": true,
+          "format": "NTFS",
+          "label": "Storage",
+          "letter": "E",
+          "folders": ["Media", "Backups"]
+        }
+      ]
+    },
+    {
+      "id": "{{WINDOWS_DISK_ID}}",
+      "type": "Windows NVMe",
+      "installDisk": true,
+      "partitions": [
+        {
+          "order": 1,
+          "type": "EFI",
+          "size": "{{EFI_PARTITION_SIZE}}",
+          "format": "FAT32",
+          "label": "System"
+        },
+        {
+          "order": 2,
+          "type": "MSR",
+          "size": "{{MSR_PARTITION_SIZE}}"
+        },
+        {
+          "order": 3,
+          "type": "Primary",
+          "size": "{{RECOVERY_PARTITION_SIZE}}",
+          "format": "NTFS",
+          "label": "Recovery",
+          "typeID": "de94bba4-06d1-4d40-a16a-bfd50179d6ac"
+        },
+        {
+          "order": 4,
+          "type": "Primary",
+          "size": "{{WINDOWS_PARTITION_SIZE}}",
+          "format": "NTFS",
+          "label": "Windows",
+          "letter": "C",
+          "installTo": true
+        },
+        {
+          "order": 5,
+          "type": "Primary",
+          "size": "{{OVERPROVISIONING_SIZE}}",
+          "format": "RAW",
+          "label": "OP"
+        }
+      ]
+    }
+  ],
+  "driveLetters": {
+    "protected": ["D", "E", "F", "C", "U", "V", "W", "X", "Y", "Z", "R", "T", "M"],
+    "notes": "System: D (Disk 0), E (Disk 1), F (Disk 3), C (Windows). USB: U, V, W. WinPE: X. Network: Y, Z. RamDisk: R. Mounts: T, M. S and B are folders."
+  },
+  "totalSize": {
+    "windowsDisk": "~1TB (826GB usable + 90GB OP)",
+    "appsDisk": "~210GB usable + OP remainder",
+    "mediaDisk": "~1TB (465GB + 465GB)"
+  }
+}

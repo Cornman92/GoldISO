@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pass: auditSystem
+  Purpose: Audit mode system settings
+  
+  This pass runs when entering audit mode (Ctrl+Shift+F3 during OOBE).
+  Use for:
+  - Installing additional drivers
+  - Running system-level configuration
+-->
+<settings pass="auditSystem">
+  <!-- Currently no audit system configuration -->
+</settings>

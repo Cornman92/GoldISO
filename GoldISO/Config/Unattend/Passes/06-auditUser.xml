@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pass: auditUser
+  Purpose: Audit mode user settings
+  
+  This pass runs for the audit user account.
+  Use for:
+  - User-level configuration in audit mode
+-->
+<settings pass="auditUser">
+  <!-- Currently no audit user configuration -->
+</settings>

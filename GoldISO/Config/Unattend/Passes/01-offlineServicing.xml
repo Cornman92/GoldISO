@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pass: offlineServicing
+  Purpose: Windows updates and driver injection during offline servicing phase
+  
+  This pass runs when the image is offline (not booted). Use for:
+  - Adding Windows updates (.msu/.cab files)
+  - Injecting device drivers
+  - Enabling/disabling Windows features
+-->
+<settings pass="offlineServicing">
+  <!-- Currently no offline servicing configuration -->
+  <!-- Drivers and updates are injected during specialize phase instead -->
+</settings>

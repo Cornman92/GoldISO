@@ -1,0 +1,11 @@
+{
+  "name": "goldiso-config",
+  "version": "1.0.0",
+  "description": "GoldISO project configuration (placeholder for package manager integration)",
+  "scripts": {
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": ["windows", "iso", "deployment"],
+  "author": "C-Man",
+  "license": "MIT"
+}

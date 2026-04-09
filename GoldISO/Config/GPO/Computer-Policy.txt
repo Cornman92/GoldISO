@@ -1,0 +1,158 @@
+; ============================================================================
+; GoldISO Computer Policy (HKLM)
+; Applied via LGPO.exe during OOBE FirstLogonCommands
+; ============================================================================
+; 
+; This file contains Group Policy settings that replace registry-based
+; configuration for better manageability and enterprise alignment.
+;
+; Format: LGPO text format
+; https://docs.microsoft.com/en-us/windows/security/threat-protection/security-compliance-toolkit-10
+;
+; ============================================================================
+
+; ============================================================================
+; PRIVACY & TELEMETRY SETTINGS
+; ============================================================================
+
+; Turn off telemetry
+Computer\Software\Policies\Microsoft\Windows\DataCollection\AllowTelemetry=DWORD:0
+
+; Disable location tracking
+Computer\Software\Policies\Microsoft\Windows\LocationAndSensors\DisableLocation=DWORD:1
+
+; Disable Windows Feedback
+Computer\Software\Policies\Microsoft\Windows\Windows Feedback\NoFeedbackHub=DWORD:1
+
+; Disable tailored experiences with diagnostic data
+Computer\Software\Policies\Microsoft\Windows\CloudContent\DisableTailoredExperiencesWithDiagnosticData=DWORD:1
+
+; Disable advertising ID
+Computer\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo\DisabledByGroupPolicy=DWORD:1
+
+; Disable input personalization
+Computer\SOFTWARE\Policies\Microsoft\InputPersonalization\AllowInputPersonalization=DWORD:0
+
+; Do not show feedback notifications
+Computer\SOFTWARE\Policies\Microsoft\Windows\DataCollection\DoNotShowFeedbackNotifications=DWORD:1
+
+; Disable setting sync
+Computer\SOFTWARE\Policies\Microsoft\Windows\SettingSync\DisableSettingSync=DWORD:1
+Computer\SOFTWARE\Policies\Microsoft\Windows\SettingSync\DisableSyncOnPaidNetwork=DWORD:1
+
+; ============================================================================
+; WINDOWS UPDATE SETTINGS
+; ============================================================================
+
+; No auto-restart with logged on users
+Computer\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU\NoAutoRebootWithLoggedOnUsers=DWORD:1
+
+; Do not include drivers with Windows Update
+Computer\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\ExcludeWUDriversInQualityUpdate=DWORD:1
+
+; Delivery Optimization - Disabled (0 = Off, 1 = LAN only, 2 = Internet)
+Computer\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization\DODownloadMode=DWORD:0
+
+; Configure update notifications
+Computer\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\SetUpdateNotificationLevel=DWORD:2
+
+; Allow MU update service
+Computer\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AllowMUUpdateService=DWORD:1
+
+; ============================================================================
+; GAMING & PERFORMANCE SETTINGS
+; ============================================================================
+
+; Allow Game DVR (set to 0 to disable, 1 to enable)
+Computer\SOFTWARE\Policies\Microsoft\Windows\GameDVR\AllowGameDVR=DWORD:0
+
+; Allow broadcasting (GameDVR)
+Computer\SOFTWARE\Policies\Microsoft\Windows\GameDVR\AllowBroadcasting=DWORD:0
+
+; Enable Storage Sense globally
+Computer\SOFTWARE\Policies\Microsoft\Windows\StorageSense\AllowStorageSenseGlobal=DWORD:1
+
+; ============================================================================
+; EXPLORER & UI SETTINGS
+; ============================================================================
+
+; Disable Bing in Start Menu search
+Computer\SOFTWARE\Policies\Microsoft\Windows\Explorer\DisableSearchBoxSuggestions=DWORD:1
+
+; Turn off Windows Copilot
+Computer\SOFTWARE\Policies\Microsoft\Windows\Windows Copilot\TurnOffWindowsCopilot=DWORD:1
+
+; Disable Windows Recall (AI Memory)
+Computer\SOFTWARE\Policies\Microsoft\Windows\WindowsAI\RecallEnabled=DWORD:0
+
+; Disable Click to Run
+Computer\SOFTWARE\Policies\Microsoft\Windows\ClickToRun\TurnOffClickToRun=DWORD:1
+
+; ============================================================================
+; SECURITY & UAC SETTINGS
+; ============================================================================
+
+; UAC: Behavior of the elevation prompt for administrators
+; 5 = Prompt for consent (non-Windows binaries)
+Computer\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\ConsentPromptBehaviorAdmin=DWORD:5
+
+; UAC: Prompt on secure desktop
+Computer\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\PromptOnSecureDesktop=DWORD:1
+
+; Block AAD workplace join
+Computer\SOFTWARE\Policies\Microsoft\Windows\WorkplaceJoin\BlockAADWorkplaceJoin=DWORD:1
+
+; Disable Windows Hello for Business
+Computer\SOFTWARE\Policies\Microsoft\Windows\Microsoft Passport for Work\EnableHello=DWORD:0
+
+; ============================================================================
+; CORTANA & SEARCH SETTINGS
+; ============================================================================
+
+; Disable Cortana
+Computer\SOFTWARE\Policies\Microsoft\Windows\Windows Search\AllowCortana=DWORD:0
+
+; Disable Cortana above lock screen
+Computer\SOFTWARE\Policies\Microsoft\Windows\Windows Search\AllowCortanaAboveLock=DWORD:0
+
+; ============================================================================
+; APP PRIVACY SETTINGS
+; ============================================================================
+
+; Let apps run in background
+Computer\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy\LetAppsRunInBackground=DWORD:1
+
+; ============================================================================
+; ONEDRIVE SETTINGS
+; ============================================================================
+
+; Prevent OneDrive KFM opt-in
+Computer\SOFTWARE\Policies\Microsoft\OneDrive\KFMBlockOptIn=DWORD:1
+
+; ============================================================================
+; WINDOWS STORE SETTINGS
+; ============================================================================
+
+; Turn off Store application
+Computer\SOFTWARE\Policies\Microsoft\WindowsStore\RemoveWindowsStore=DWORD:0
+
+; Auto-download setting (4 = off)
+Computer\SOFTWARE\Policies\Microsoft\WindowsStore\AutoDownload=DWORD:4
+
+; ============================================================================
+; REMOTE ASSISTANCE SETTINGS
+; ============================================================================
+
+; Disable remote assistance
+Computer\SOFTWARE\Policies\Microsoft\Windows\Remote Assistance\fAllowToGetHelp=DWORD:0
+
+; ============================================================================
+; ERROR REPORTING SETTINGS
+; ============================================================================
+
+; Disable Windows Error Reporting
+Computer\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting\Disabled=DWORD:1
+
+; ============================================================================
+; END OF COMPUTER POLICY
+; ============================================================================
